@@ -18,7 +18,7 @@ export default function LoginPage() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,9 +27,10 @@ export default function LoginPage() {
       });
 
       if (response.ok) {
-        alert('Login successful!');
+        // alert('Login successful!');
         setEmail('');
         setPassword('');
+        
       } else {
         const data = await response.json();
         alert(data.error || 'Login failed');
@@ -47,7 +48,7 @@ export default function LoginPage() {
           {showPassword ? 'Enter password' : 'Sign in or create an account'}
         </h1>
         <p className="text-sm text-gray-600 mb-6 text-center">
-          Your everyday grocery shopping is here!
+          CMS is here!
         </p>
 
         {!showPassword ? (
@@ -80,7 +81,7 @@ export default function LoginPage() {
 
             <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
               <img
-                src="/api/placeholder/20/20"
+                src="https://www.google.com/favicon.ico"
                 alt="Google"
                 className="w-5 h-5 mr-2"
               />
@@ -127,22 +128,8 @@ export default function LoginPage() {
         )}
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          {showPassword ? (
-            <a href="/signup" className="text-blue-600 hover:text-blue-500">
-              Create an account
-            </a>
-          ) : (
-            <>
-              By continuing you agree to our{' '}
-              <a href="#" className="text-blue-600">
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="#" className="text-blue-600">
-                Privacy Policy
-              </a>
-            </>
-          )}
+          Don't have an account?
+          <a href="/signup" className="text-blue-600 ml-1 hover:text-blue-500">Sign up</a>
         </p>
       </div>
     </div>

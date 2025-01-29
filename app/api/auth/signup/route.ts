@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import dbConnect from "../../../lib/mongodb"; // Adjust the import path as needed
-import User from "../models/User"; // Import the User model
+import dbConnect from "../../../../lib/mongodb"; // Adjust the import path as needed
+import User from "../../models/user"; // Import the User model
+import bcrypt from 'bcrypt';
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
 
     // Check if the user already exists
     const existingUser = await User.findOne({ email });
+    
     if (existingUser) {
       return NextResponse.json(
         { error: "User with this email already exists" },
@@ -18,9 +20,9 @@ export async function POST(request: Request) {
     }
 
     // Create a new user
-    // const hashedPassword = await bcrypt.hash(password, 10);
-    // const newUser = new User({ name, email, password: hashedPassword });
-    const newUser = new User({ name, email, password });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ name, email, password: hashedPassword });
+    // const newUser = new User({ name, email, password });
     await newUser.save();
 
     return NextResponse.json(
