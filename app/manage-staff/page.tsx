@@ -4,7 +4,6 @@
 import React, { useState } from 'react';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { Input } from 'postcss';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 
@@ -57,7 +56,7 @@ export default function ManageStaffPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Staff</h1>
-                    <Link href="/staff/add">
+                    <Link href="/manage-staff/add">
                         <Button className="bg-blue-500 hover:bg-blue-600">
                             <Plus className="w-4 h-4 mr-2" />
                             Add Staff

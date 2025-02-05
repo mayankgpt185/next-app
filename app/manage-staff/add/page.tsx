@@ -1,129 +1,203 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
-import Link from 'next/link';
-import Layout from '@/app/layout'; // Adjust the import path as necessary
+import React, { useState, ChangeEvent, FormEvent } from 'react';
+import debounce from 'lodash/debounce';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Button } from '@/app/components/ui/button';
-import { Input } from '@/app/components/ui/input';
-import RootLayout from '@/app/layout';
 import { Card } from '@/app/components/ui/card';
+import { Textarea } from '@/app/components/ui/textarea';
+import { Input } from '@/app/components/ui/input';
 
-interface StaffMember {
-    id: number;
-    firstName: string;
-    lastName: string;
-    username: string;
-    email: string;
-    address: string;
-    lastLogin: string;
-    dateJoined: string;
+interface FormData {
+  email: string;
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+}
+
+interface Message {
+  type: 'success' | 'error' | '';
+  content: string;
 }
 
 export default function AddStaffPage() {
-    const [searchTerm, setSearchTerm] = useState('');
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    username: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    address: '',
+  });
 
-    // Mock data - replace with actual API call
-    const staffMembers: StaffMember[] = [
-        {
-            id: 2,
-            firstName: "Mayank",
-            lastName: "Gupta",
-            username: "mayank.staff",
-            email: "mayank.staff@mit.com",
-            address: "Shree Ganesh galaxy, charholi budruk ,pune",
-            lastLogin: "Jan. 18, 2025, 6:38 a.m.",
-            dateJoined: "Nov. 7, 2023"
-        },
-        {
-            id: 4,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        }
-    ];
+  const [emailStatus, setEmailStatus] = useState<'available' | 'unavailable' | ''>('');
+  const [usernameStatus, setUsernameStatus] = useState<'available' | 'unavailable' | ''>('');
+  const [message, setMessage] = useState<Message>({ type: '', content: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const filteredStaff = staffMembers.filter(staff =>
-        Object.values(staff).some(value =>
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-    return (
-        
-        <RootLayout>
-            <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Manage Staff</h1>
-                    <Link href="manage/staff/add">
-                        <Button className="bg-blue-500 hover:bg-blue-600">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Staff
-                        </Button>
-                    </Link>
-                </div>
+  // Debounced email check
+  const checkEmail = debounce(async (email: string) => {
+    if (!email) return setEmailStatus('');
 
-                <Card className="p-6">
-                    <div className="mb-6">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                            <Input
-                                type="text"
-                                placeholder="Search staff..."
-                                className="pl-10"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
+    try {
+      const response = await fetch('/api/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const exists = await response.json();
+      setEmailStatus(exists ? 'unavailable' : 'available');
+    } catch (error) {
+      console.error('Error checking email:', error);
+    }
+  }, 500);
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-800">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">ID</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">First Name</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">Last Name</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">Username</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">Address</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">Last Login</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">Date Joined</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {filteredStaff.map((staff) => (
-                                    <tr key={staff.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                        <td className="px-4 py-3 text-sm">{staff.id}</td>
-                                        <td className="px-4 py-3 text-sm">{staff.firstName}</td>
-                                        <td className="px-4 py-3 text-sm">{staff.lastName}</td>
-                                        <td className="px-4 py-3 text-sm">{staff.username}</td>
-                                        <td className="px-4 py-3 text-sm">{staff.email}</td>
-                                        <td className="px-4 py-3 text-sm">{staff.address}</td>
-                                        <td className="px-4 py-3 text-sm">{staff.lastLogin}</td>
-                                        <td className="px-4 py-3 text-sm">{staff.dateJoined}</td>
-                                        <td className="px-4 py-3 text-sm">
-                                            <div className="flex space-x-2">
-                                                <Button>
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
-                                                <Button className="text-red-500 hover:text-red-600">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
-            </div>
-        </RootLayout>
-    );
+  // Debounced username check
+  const checkUsername = debounce(async (username: string) => {
+    if (!username) return setUsernameStatus('');
+
+    try {
+      const response = await fetch('/api/check-username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+      const exists = await response.json();
+      setUsernameStatus(exists ? 'unavailable' : 'available');
+    } catch (error) {
+      console.error('Error checking username:', error);
+    }
+  }, 500);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setMessage({ type: 'success', content: 'Staff member added successfully!' });
+        setFormData({
+          email: '',
+          username: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          address: '',
+        });
+        setEmailStatus('');
+        setUsernameStatus('');
+      } else {
+        const data = await response.json();
+        setMessage({ type: 'error', content: data.error || 'Failed to add staff member.' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', content: 'An error occurred. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
+        <h1 className="text-2xl font-bold mb-6 text-center">Add New Staff</h1>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="form-control">
+            <label className="label">First Name</label>
+            <Input
+              type="text"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleChange}
+              placeholder="First Name"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="form-control">
+            <label className="label">Last Name</label>
+            <Input
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              placeholder="Last Name"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="form-control">
+            <label className="label">Email</label>
+            <Input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Email"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="form-control">
+            <label className="label">Username</label>
+            <Input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Username"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="form-control">
+            <label className="label">Password</label>
+            <Input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Password"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="form-control col-span-2">
+            <label className="label">Address</label>
+            <Textarea
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="Address"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="form-control col-span-2 flex justify-end">
+            <Button type="submit" className="w-full bg-[#D2E057] text-gray-700 py-2 px-4 rounded-lg hover:bg-[#c8d652] focus:outline-none focus:ring-2 focus:ring-[#D2E057]" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </Button>
+          </div>
+        </form>
+        {message.content && (
+          <Alert variant={message.type === 'error' ? 'destructive' : 'default'} className="mt-4">
+            <AlertDescription>{message.content}</AlertDescription>
+          </Alert>
+        )}
+      </div>
+    </div>
+  );
 }
