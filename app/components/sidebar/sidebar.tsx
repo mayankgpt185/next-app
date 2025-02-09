@@ -1,79 +1,86 @@
 'use client'
-import React, { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/card';
 const lucideReact = require('lucide-react');
+
 const Sidebar = () => {
-  // const [isCollapsed, setIsCollapsed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const mainContainerClass = `flex h-screen ${theme === 'light' ? 'bg-gray-100' : 'bg-neutral-900'}`;
-  const menuItemClass = `flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${theme === 'light' ? 'bg-white hover:bg-gray-200 text-gray-800' : 'bg-neutral-800 hover:bg-neutral-700 text-white'}`;
-  // Avoid hydration mismatch
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
+
   useEffect(() => {
-    setMounted(true);
+    // Initialize theme state
+    setCurrentTheme(document.documentElement.getAttribute('data-theme') as 'light' | 'dark' || 'light');
   }, []);
 
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);
   };
 
-  if (!mounted) return null;
+  const setTheme = (theme: 'light' | 'dark') => {
+    document.documentElement.setAttribute('data-theme', theme);
+    setCurrentTheme(theme);
+  };
+
+  const getCurrentTheme = () => {
+    return document.documentElement.getAttribute('data-theme') || 'light';
+  };
 
   return (
-
-    <div className={`flex h-screen ${theme === 'light' ? 'bg-white' : 'bg-neutral-900'}`}>
-
+    <div className="flex h-screen">
       {/* Narrow Sidebar - Fixed */}
       {!isExpanded && (
-        <div className="w-16 bg-neutral-900 flex flex-col items-center py-4 border-r border-neutral-800 shrink-0">
+        <div className="w-16 bg-base-300 flex flex-col items-center py-4 border-r border-base-200 shrink-0 transition-colors duration-300 ease-in-out">
           <div className="flex flex-col items-center space-y-6 flex-1">
             {/* Toggle button */}
             <button
               onClick={toggleSidebar}
-              className="w-6 h-6 bg-neutral-800 rounded flex items-center justify-center text-neutral-400 hover:text-white transition-colors duration-200"
+              className="btn btn-sm btn-neutral btn-circle"
             >
-              <lucideReact.ChevronRight className="w-4 h-4" />
+              <lucideReact.ChevronRight className="w-4 h-4 text-base-content" />
             </button>
 
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.Users className="w-5 h-5 text-blue-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.Users className="w-5 h-5 text-primary" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.Contact className="w-5 h-5 text-green-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.Contact className="w-5 h-5 text-success" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.NotebookTabs className="w-5 h-5 text-pink-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.Bookmark className="w-5 h-5 text-purple-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.CalendarCog className="w-5 h-5 text-yellow-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.CalendarCog className="w-5 h-5 text-warning" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.FileChartLine className="w-5 h-5 text-cyan-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.FileChartLine className="w-5 h-5 text-info" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.Sticker className="w-5 h-5 text-orange-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.Sticker className="w-5 h-5 text-error" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-neutral-800 transition-colors duration-200">
-              <lucideReact.DoorOpen className="w-5 h-5 text-violet-500" />
+            <button className="btn btn-ghost btn-circle">
+              <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
             </button>
           </div>
 
           {/* Bottom section */}
           <div className="mt-auto flex flex-col items-center space-y-4">
-            <div className="w-8 h-8 rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200">
-              <img
-                src='/images/mayank.jpg'
-                alt="User"
-                className="w-full h-full object-cover"
-              />
+            <div className="avatar">
+              <div className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                <img src='/images/mayank.jpg' alt="User" />
+              </div>
             </div>
-            <button className="w-8 h-8 bg-neutral-800 rounded-lg flex items-center justify-center hover:bg-neutral-700 transition-colors duration-200">
-              <lucideReact.Plus className="w-5 h-5" />
+            <button
+              onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
+              className="btn btn-ghost btn-circle"
+            >
+              {currentTheme === 'light' ? (
+                <lucideReact.Moon className="w-5 h-5 text-neutral" />
+              ) : (
+                <lucideReact.Sun className="w-5 h-5 text-warning" />
+              )}
             </button>
           </div>
         </div>
@@ -81,111 +88,76 @@ const Sidebar = () => {
 
       {/* Wide Sidebar - Scrollable */}
       {isExpanded && (
-        <div className="w-64 bg-neutral-900 transition-all duration-300 ease-in-out flex flex-col shrink-0">
+        <div className="w-64 bg-base-300 flex flex-col shrink-0">
           {/* Fixed Header */}
-          <div className="p-4 border-b border-neutral-800">
+          <div className="p-4 border-b border-base-200">
             <div className="flex items-center space-x-2">
               <button
                 onClick={toggleSidebar}
-                className="w-6 h-6 bg-neutral-800 rounded flex items-center justify-center text-neutral-400 hover:text-white transition-colors duration-200"
+                className="btn btn-sm btn-neutral btn-circle"
               >
-                <lucideReact.ChevronLeft className="w-4 h-4" />
+                <lucideReact.ChevronLeft className="w-4 h-4 text-base-content" />
               </button>
-              <div className="w-6 h-6 rounded-full bg-blue-500" />
-              <span className="text-white text-lg font-semibold">Brainwave</span>
+              <div className="badge badge-primary">CJS</div>
             </div>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <div className="p-4 space-y-6">
-              {/* Menu Items */}
-              <div className="space-y-2">
-                <div className={menuItemClass}>
-                  <lucideReact.Users className="w-5 h-5 text-blue-500" />
-                  <span className="text-white">Manage Staff</span>
-                </div>
-                <div className={menuItemClass}>
-                  <lucideReact.UserPlus className="w-5 h-5 text-blue-500" />
-                  <span className="text-white">Add Staff</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.Contact className="w-5 h-5 text-green-500" />
-                  <span className="text-white">Manage Student</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.BookUser className="w-5 h-5 text-green-500" />
-                  <span className="text-white">Add Student</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.NotebookTabs className="w-5 h-5 text-pink-500" />
-                  <span className="text-white">Manage Course</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.BookmarkPlus className="w-5 h-5 text-pink-500" />
-                  <span className="text-white">Add Course</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.Bookmark className="w-5 h-5 text-purple-500" />
-                  <span className="text-white">Manage Subject</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.BookmarkCheck className="w-5 h-5 text-purple-500" />
-                  <span className="text-white">Add Subject</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.CalendarCog className="w-5 h-5 text-yellow-500" />
-                  <span className="text-white">Manage Session</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.CalendarCheck2 className="w-5 h-5 text-yellow-500" />
-                  <span className="text-white">Add Session</span>
-                </div>
-                <div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.FileChartLine className="w-5 h-5 text-cyan-500" />
-                  <span className="text-white">View Attendance</span>
-                </div><div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.Sticker className="w-5 h-5 text-orange-500" />
-                  <span className="text-white">Student Feedback</span>
-                </div><div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.Sticker className="w-5 h-5 text-orange-500" />
-                  <span className="text-white">Staff Feedback</span>
-                </div><div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.DoorOpen className="w-5 h-5 text-violet-500" />
-                  <span className="text-white">Student Leave</span>
-                </div><div className="flex items-center space-x-3 px-3 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-                  <lucideReact.DoorOpen className="w-5 h-5 text-violet-500" />
-                  <span className="text-white">Staff Leave</span>
-                </div>
-
-                {/* <div className="flex items-center space-x-3 px-3 py-2 text-neutral-400 hover:bg-neutral-800 rounded-lg transition-colors duration-200">
-                <lucideReact.Search className="w-5 h-5" />
-                <span>Search</span>
-                <span className="ml-auto text-sm bg-neutral-800 px-2 py-0.5 rounded">⌘ F</span>
-              </div>
-              <div className="flex items-center space-x-3 px-3 py-2 text-neutral-400 hover:bg-neutral-800 rounded-lg transition-colors duration-200">
-                <div className="w-5 h-5">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M3 9h18" />
-                  </svg>
-                </div>
-                <span>Manage subscription</span>
-              </div>
-              <div className="flex items-center space-x-3 px-3 py-2 text-neutral-400 hover:bg-neutral-800 rounded-lg transition-colors duration-200">
-                <lucideReact.Clock className="w-5 h-5" />
-                <span>Updates & FAQ</span>
-              </div>
-              <div className="flex items-center space-x-3 px-3 py-2 text-neutral-400 hover:bg-neutral-800 rounded-lg transition-colors duration-200">
-                <lucideReact.Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </div> */}
-              </div>
-            </div>
+          <div className="flex-1 overflow-y-auto">
+            <ul className="menu p-4 text-base-content">
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.Users className="w-5 h-5 text-primary" />
+                  <span>Manage Staff</span>
+                </a>
+              </li>
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.Contact className="w-5 h-5 text-success" />
+                  <span>Manage Student</span>
+                </a>
+              </li>
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
+                  <span>Manage Course</span>
+                </a>
+              </li>
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
+                  <span>Manage Subject</span>
+                </a>
+              </li>
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.CalendarCog className="w-5 h-5 text-warning" />
+                  <span>Manage Session</span>
+                </a>
+              </li>
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.FileChartLine className="w-5 h-5 text-info" />
+                  <span>View Attendance</span>
+                </a>
+              </li>
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.Sticker className="w-5 h-5 text-error" />
+                  <span>Feedback</span>
+                </a>
+              </li>
+              <li>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
+                  <span>Leave</span>
+                </a>
+              </li>
+            </ul>
           </div>
 
           {/* Fixed Footer */}
-          <div className="p-4 border-t border-neutral-800">
+          <div className="p-4 border-t border-base-200">
             <Card className="bg-neutral-800 border-0 p-3 mb-3 hover:bg-neutral-700 transition-colors duration-200">
               <div className="flex items-center space-x-3">
                 <img
@@ -196,62 +168,31 @@ const Sidebar = () => {
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <span className="text-white">Mayank Gupta</span>
-                    {/* <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded">Free</span> */}
                   </div>
-                  {/* <span className="text-sm text-neutral-400">tam@ui8.net</span> */}
                 </div>
               </div>
             </Card>
-
-            {/* <button className="w-full px-3 py-2 bg-neutral-800 text-neutral-400 rounded-lg hover:bg-neutral-700 transition-colors duration-200">
-            Upgrade to Pro
-          </button> */}
-
-            {/* Theme Toggle */}
-            <div className="flex items-center mt-3 bg-neutral-800 rounded-lg p-1">
+            <div className="join w-full mb-3">
               <button
                 onClick={() => setTheme('light')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-1 px-3 rounded transition-colors duration-200 ${theme === 'light' ? 'bg-neutral-700 text-white' : 'text-neutral-400'
-                  }`}
+                className={`join-item btn flex-1 ${currentTheme === 'light' ? 'btn-active btn-neutral' : ''}`}
               >
-                <lucideReact.Sun className="w-4 h-4" />
-                <span>Light</span>
+                <lucideReact.Sun className="w-5 h-5 mr-2 text-warning" />
+                Light
               </button>
               <button
                 onClick={() => setTheme('dark')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-1 px-3 rounded transition-colors duration-200 ${theme === 'dark' ? 'bg-neutral-700 text-white' : 'text-neutral-400'
-                  }`}
+                className={`join-item btn flex-1 ${currentTheme === 'dark' ? 'btn-active btn-neutral' : ''}`}
               >
-                <lucideReact.Moon className="w-4 h-4" />
-                <span>Dark</span>
+                <lucideReact.Moon className="w-5 h-5 text-neutral" />
+                Dark
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #4a4a4a;
-          border-radius: 3px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: #6b6b6b;
-        }
-      `}</style>
     </div>
-
   );
-
 };
 
 export default Sidebar;

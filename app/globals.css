@@ -16,3 +16,18 @@ body {
   color: rgb(var(--foreground-rgb));
   /* padding: 1rem; */
 }
+
+/* Add smooth transitions for theme changes */
+* {
+  transition: background-color 100ms ease-in-out, 
+              border-color 100ms ease-in-out,
+              color 100ms ease-in-out;
+}
+
+/* Exclude transitions from specific elements where it might cause issues */
+.no-transition,
+.btn,
+.avatar,
+img {
+  transition: none !important;
+}

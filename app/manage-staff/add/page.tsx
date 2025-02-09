@@ -1,203 +1,150 @@
 'use client';
 
 import React, { useState, ChangeEvent, FormEvent } from 'react';
-import debounce from 'lodash/debounce';
-import { Alert, AlertDescription } from '@/app/components/ui/alert';
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import ManageStaffPage from '../page';
 import { Button } from '@/app/components/ui/button';
-import { Card } from '@/app/components/ui/card';
-import { Textarea } from '@/app/components/ui/textarea';
-import { Input } from '@/app/components/ui/input';
+import { useRouter } from 'next/navigation';
 
-interface FormData {
-  email: string;
-  username: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  address: string;
-}
+const formSchema = z.object({
+  firstname: z.string().min(2, "First name must be at least 2 characters"),
+  lastname: z.string().min(2, "Last name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  address: z.string().min(5, "Address must be at least 5 characters"),
+});
 
-interface Message {
-  type: 'success' | 'error' | '';
-  content: string;
-}
+type FormData = z.infer<typeof formSchema>;
 
 export default function AddStaffPage() {
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    username: '',
-    password: '',
-    firstName: '',
-    lastName: '',
-    address: '',
+  const router = useRouter();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
   });
 
-  const [emailStatus, setEmailStatus] = useState<'available' | 'unavailable' | ''>('');
-  const [usernameStatus, setUsernameStatus] = useState<'available' | 'unavailable' | ''>('');
-  const [message, setMessage] = useState<Message>({ type: '', content: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Debounced email check
-  const checkEmail = debounce(async (email: string) => {
-    if (!email) return setEmailStatus('');
-
-    try {
-      const response = await fetch('/api/check-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const exists = await response.json();
-      setEmailStatus(exists ? 'unavailable' : 'available');
-    } catch (error) {
-      console.error('Error checking email:', error);
-    }
-  }, 500);
-
-  // Debounced username check
-  const checkUsername = debounce(async (username: string) => {
-    if (!username) return setUsernameStatus('');
-
-    try {
-      const response = await fetch('/api/check-username', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
-      });
-      const exists = await response.json();
-      setUsernameStatus(exists ? 'unavailable' : 'available');
-    } catch (error) {
-      console.error('Error checking username:', error);
-    }
-  }, 500);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', content: 'Staff member added successfully!' });
-        setFormData({
-          email: '',
-          username: '',
-          password: '',
-          firstName: '',
-          lastName: '',
-          address: '',
-        });
-        setEmailStatus('');
-        setUsernameStatus('');
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', content: data.error || 'Failed to add staff member.' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', content: 'An error occurred. Please try again.' });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const onSubmit = (data: FormData) => {
+    console.log("Form Data:", data);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-center">Add New Staff</h1>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="form-control">
-            <label className="label">First Name</label>
-            <Input
-              type="text"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              placeholder="First Name"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="form-control">
-            <label className="label">Last Name</label>
-            <Input
-              type="text"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              placeholder="Last Name"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="form-control">
-            <label className="label">Email</label>
-            <Input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="form-control">
-            <label className="label">Username</label>
-            <Input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Username"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="form-control">
-            <label className="label">Password</label>
-            <Input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="form-control col-span-2">
-            <label className="label">Address</label>
-            <Textarea
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="Address"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div className="form-control col-span-2 flex justify-end">
-            <Button type="submit" className="w-full bg-[#D2E057] text-gray-700 py-2 px-4 rounded-lg hover:bg-[#c8d652] focus:outline-none focus:ring-2 focus:ring-[#D2E057]" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit'}
-            </Button>
-          </div>
-        </form>
-        {message.content && (
-          <Alert variant={message.type === 'error' ? 'destructive' : 'default'} className="mt-4">
-            <AlertDescription>{message.content}</AlertDescription>
-          </Alert>
-        )}
+    <div className="flex flex-col w-full p-6 bg-base-100 min-h-screen">
+      <div className="card bg-base-200 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title text-2xl font-bold text-base-content mb-6">Add New Staff Member</h2>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* First Name */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text text-base-content">First Name</span>
+                </label>
+                <input
+                  type="text"
+                  {...register("firstname")}
+                  className="input input-bordered w-full bg-base-100 text-base-content"
+                  placeholder="Enter first name"
+                />
+                {errors.firstname && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{errors.firstname.message}</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Last Name */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text text-base-content">Last Name</span>
+                </label>
+                <input
+                  type="text"
+                  {...register("lastname")}
+                  className="input input-bordered w-full bg-base-100 text-base-content"
+                  placeholder="Enter last name"
+                />
+                {errors.lastname && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{errors.lastname.message}</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Email */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text text-base-content">Email</span>
+                </label>
+                <input
+                  type="email"
+                  {...register("email")}
+                  className="input input-bordered w-full bg-base-100 text-base-content"
+                  placeholder="Enter email address"
+                />
+                {errors.email && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{errors.email.message}</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Password */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text text-base-content">Password</span>
+                </label>
+                <input
+                  type="password"
+                  {...register("password")}
+                  className="input input-bordered w-full bg-base-100 text-base-content"
+                  placeholder="Enter password"
+                />
+                {errors.password && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{errors.password.message}</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Address */}
+              <div className="form-control w-full md:col-span-2">
+                <label className="label">
+                  <span className="label-text text-base-content">Address</span>
+                </label>
+                <textarea
+                  {...register("address")}
+                  className="textarea textarea-bordered w-full bg-base-100 text-base-content h-24"
+                  placeholder="Enter address"
+                />
+                {errors.address && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{errors.address.message}</span>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <Button variant="error" outline onClick={() => router.push('/manage-staff')}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" outline>
+                Save
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
+
+      {/* <div className="divider"></div>
+      <ManageStaffPage /> */}
     </div>
   );
 }

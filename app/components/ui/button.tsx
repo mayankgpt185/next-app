@@ -3,14 +3,44 @@ import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     className?: string;
+    variant?: 'default' | 'neutral' | 'primary' | 'secondary' | 'accent' | 'ghost' | 'link' | 'info' | 'success' | 'warning' | 'error';
+    size?: 'lg' | 'md' | 'sm' | 'xs';
+    outline?: boolean;
+
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, children, ...props }, ref) => {
+    ({ className = '', variant = 'default', size, outline, children, ...props }, ref) => {
+        const getButtonClasses = () => {
+            const classes = ['btn'];
+
+            // Add variant
+            if (variant !== 'default') {
+                classes.push(`btn-${variant}`);
+            }
+
+            // Add size
+            if (size) {
+                classes.push(`btn-${size}`);
+            }
+
+            // Add outline
+            if (outline) {
+                classes.push('btn-outline');
+            }
+
+            // Add custom classes
+            if (className) {
+                classes.push(className);
+            }
+
+            return classes.join(' ');
+        };
+
         return (
             <button
                 ref={ref}
-                className={`inline-flex items-center justify-center rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+                className={getButtonClasses()}
                 {...props}
             >
                 {children}

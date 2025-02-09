@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-hover-card": "^1.1.4",
     "@types/node": "22.10.7",
     "@types/react": "19.0.7",
@@ -31,11 +32,13 @@
     "postcss": "8.5.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "react-hook-form": "^7.54.2",
     "react-icons": "^4.11.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss": "3.4.17",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
