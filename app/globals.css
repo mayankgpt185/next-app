@@ -4,13 +4,14 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
+  --toast-bg: white; /* Light mode background */
+  --toast-text: black; /* Light mode text */
 }
 
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-  }
-} */
+.dark {
+  --toast-bg: #1f2937; /* Dark mode background (gray-800) */
+  --toast-text: white; /* Dark mode text */
+}
 
 body {
   color: rgb(var(--foreground-rgb));
@@ -30,4 +31,18 @@ body {
 .avatar,
 img {
   transition: none !important;
+}
+
+
+/* Global styles for read-only input fields */
+input.read-only {
+  background-color: var(--readonly-bg-color);
+  cursor: not-allowed;
+}
+
+/* Add styles for toast notifications */
+.toast {
+  background-color: var(--toast-bg);
+  color: var(--toast-text);
+  /* Add any additional styles you want for the toast */
 }

@@ -1,89 +1,101 @@
 'use client';
 
-import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import ManageStaffPage from '../page';
+import React, { useEffect, useState } from 'react';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/app/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 const formSchema = z.object({
-  firstname: z.string().min(2, "First name must be at least 2 characters"),
-  lastname: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  address: z.string().min(5, "Address must be at least 5 characters"),
-  role: z.string().min(1, "Role must be at least 1 character"),
+  firstName: z.string()
+    .nonempty("First name is required")
+    .min(2, "First name must be at least 2 characters long"),
+  lastName: z.string()
+    .nonempty("Last name is required")
+    .min(2, "Last name must be at least 2 characters long"),
+  email: z.string()
+    .nonempty("Email is required")
+    .email("Invalid email address"),
+  password: z.string()
+    .nonempty("Password is required")
+    .min(6, "Password must be at least 6 characters long"),
+  address: z.string()
+    .nonempty("Address is required")
+    .min(5, "Address must be at least 5 characters long"),
+  dateJoined: z.string().nonempty("Date joined is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-interface Role {
-  _id: string;
-  role_name: string;
-}
-
 export default function AddStaffPage() {
   const router = useRouter();
-  const [roles, setRoles] = useState<Role[]>([]);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
+  const staffRole = "STAFF";
+
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
 
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const response = await fetch('/api/role');
-        if (!response.ok) throw new Error('Failed to fetch roles');
-        const data = await response.json();
-        setRoles(data);
-      } catch (error) {
-        console.error('Error fetching roles:', error);
-      }
-    };
-    fetchRoles();
-  }, []);
 
-  const onSubmit = (data: FormData) => {
-    console.log("Form Data:", data);
+  useEffect(() => {
+    if (id) {
+      const fetchUserData = async () => {
+        try {
+          const response = await fetch(`/api/manage-staff?id=${id}`);
+          if (!response.ok) throw new Error('Failed to fetch user data');
+          const data = await response.json();
+
+          setValue("firstName", data.firstName || '');
+          setValue("lastName", data.lastName || '');
+          setValue("email", data.email || '');
+          setValue("address", data.address || '');
+          setValue("dateJoined", new Date(data.dateJoined).toISOString().split('T')[0]);
+
+        } catch (error) {
+          toast.error('Error fetching staff data');
+        }
+      };
+      fetchUserData();
+    }
+  }, [id, setValue]);
+
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
+
+    const method = id ? 'PUT' : 'POST';
+    const userData = id ? { ...data, id } : {
+      ...data,
+      role: staffRole
+    };
+    const response = await fetch(`/api/manage-staff${id ? `?id=${id}` : ''}`, {
+
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      toast.error(responseData.error || 'An error occurred');
+    } else {
+      toast.success(id ? 'Staff member updated successfully!' : 'Staff member created successfully!');
+      router.push('/manage-staff');
+    }
   };
 
   return (
     <div className="flex flex-col w-full p-6 bg-base-100 min-h-screen">
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title text-2xl font-bold text-base-content mb-6">Add New Staff Member</h2>
+          <h2 className="card-title text-2xl font-bold text-base-content mb-6">{id ? 'Edit Staff Member' : 'Add New Staff Member'}</h2>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Role */}
-              {/* <div className="form-control w-full">
-                <label className="label">
-                  <span className="label-text text-base-content">Role</span>
-                </label>
-                <select
-                  {...register("role")}
-                  className="select select-bordered w-full bg-base-100 text-base-content"
-                  defaultValue=""
-                >
-                  <option value="" disabled>Select a role</option>
-                  {roles.map((role) => (
-                    <option key={role._id} value={role._id}>
-                      {role.role_name}
-                    </option>
-                  ))}
-                </select>
-                {errors.role && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">{errors.role.message}</span>
-                  </label>
-                )}
-              </div> */}
               {/* First Name */}
               <div className="form-control w-full">
                 <label className="label">
@@ -91,13 +103,13 @@ export default function AddStaffPage() {
                 </label>
                 <input
                   type="text"
-                  {...register("firstname")}
-                  className="input input-bordered w-full bg-base-100 text-base-content"
+                  {...register("firstName")}
+                  className={`input input-bordered w-full bg-base-100 text-base-content ${errors.firstName ? 'input-error' : ''}`}
                   placeholder="Enter first name"
                 />
-                {errors.firstname && (
+                {errors.firstName && (
                   <label className="label">
-                    <span className="label-text-alt text-error">{errors.firstname.message}</span>
+                    <span className="label-text-alt text-error">{errors.firstName.message}</span>
                   </label>
                 )}
               </div>
@@ -109,13 +121,13 @@ export default function AddStaffPage() {
                 </label>
                 <input
                   type="text"
-                  {...register("lastname")}
+                  {...register("lastName")}
                   className="input input-bordered w-full bg-base-100 text-base-content"
                   placeholder="Enter last name"
                 />
-                {errors.lastname && (
+                {errors.lastName && (
                   <label className="label">
-                    <span className="label-text-alt text-error">{errors.lastname.message}</span>
+                    <span className="label-text-alt text-error">{errors.lastName.message}</span>
                   </label>
                 )}
               </div>
@@ -127,9 +139,10 @@ export default function AddStaffPage() {
                 </label>
                 <input
                   type="email"
+                  placeholder="Email"
                   {...register("email")}
-                  className="input input-bordered w-full bg-base-100 text-base-content"
-                  placeholder="Enter email address"
+                  required
+                  className={`input input-bordered w-full bg-base-100 text-base-content ${id ? 'read-only' : ''}`}
                 />
                 {errors.email && (
                   <label className="label">
@@ -139,25 +152,45 @@ export default function AddStaffPage() {
               </div>
 
               {/* Password */}
+              {!id && (
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text text-base-content">Password</span>
+                  </label>
+                  <input
+                    type="password"
+                    {...register("password")}
+                    className="input input-bordered w-full bg-base-100 text-base-content"
+                    placeholder="Enter password"
+                  />
+                  {errors.password && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{errors.password.message}</span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {/* Date Joined */}
               <div className="form-control w-full">
                 <label className="label">
-                  <span className="label-text text-base-content">Password</span>
+                  <span className="label-text text-base-content">Date Joined</span>
                 </label>
                 <input
-                  type="password"
-                  {...register("password")}
+                  type="date"
+                  {...register("dateJoined")}
                   className="input input-bordered w-full bg-base-100 text-base-content"
-                  placeholder="Enter password"
+                  placeholder="Enter date joined"
                 />
-                {errors.password && (
+                {errors.dateJoined && (
                   <label className="label">
-                    <span className="label-text-alt text-error">{errors.password.message}</span>
+                    <span className="label-text-alt text-error">{errors.dateJoined.message}</span>
                   </label>
                 )}
               </div>
 
               {/* Address */}
-              <div className="form-control w-full md:col-span-2">
+              <div className="form-control w-full">
                 <label className="label">
                   <span className="label-text text-base-content">Address</span>
                 </label>
@@ -175,19 +208,25 @@ export default function AddStaffPage() {
             </div>
 
             <div className="flex justify-end gap-4">
-              <Button variant="error" outline onClick={() => router.push('/manage-staff')}>
+              <Button
+                type="button"
+                variant="error"
+                outline
+                onClick={() => router.push('/manage-staff')}
+              >
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" outline>
-                Save
+              <Button
+                type="submit"
+                variant="primary"
+                outline
+              >
+                {id ? 'Update Staff' : 'Add Staff'}
               </Button>
             </div>
           </form>
         </div>
       </div>
-
-      {/* <div className="divider"></div>
-      <ManageStaffPage /> */}
     </div>
   );
 }

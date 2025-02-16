@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/card';
 const lucideReact = require('lucide-react');
+import { useRouter } from 'next/navigation';
 
 const Sidebar = () => {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
 
@@ -30,7 +32,7 @@ const Sidebar = () => {
       {/* Narrow Sidebar - Fixed */}
       {!isExpanded && (
         <div className="w-16 bg-base-300 flex flex-col items-center py-4 border-r border-base-200 shrink-0 transition-colors duration-300 ease-in-out">
-          <div className="flex flex-col items-center space-y-6 flex-1">
+          <div className="flex flex-col items-center space-y-5 flex-1">
             {/* Toggle button */}
             <button
               onClick={toggleSidebar}
@@ -39,7 +41,7 @@ const Sidebar = () => {
               <lucideReact.ChevronRight className="w-4 h-4 text-base-content" />
             </button>
 
-            <button className="btn btn-ghost btn-circle">
+            <button className="btn btn-ghost btn-circle" onClick={() => router.push('/manage-staff')}>
               <lucideReact.Users className="w-5 h-5 text-primary" />
             </button>
             <button className="btn btn-ghost btn-circle">
@@ -67,21 +69,23 @@ const Sidebar = () => {
 
           {/* Bottom section */}
           <div className="mt-auto flex flex-col items-center space-y-4">
-            <div className="avatar">
+            <div className="avatar space-y-2">
               <div className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
                 <img src='/images/mayank.jpg' alt="User" />
               </div>
             </div>
-            <button
-              onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
-              className="btn btn-ghost btn-circle"
-            >
-              {currentTheme === 'light' ? (
-                <lucideReact.Moon className="w-5 h-5 text-neutral" />
-              ) : (
-                <lucideReact.Sun className="w-5 h-5 text-warning" />
-              )}
-            </button>
+            <div className='flex flex-col items-center space-y-2'>
+              <button
+                onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
+                className="btn btn-ghost btn-circle"
+              >
+                {currentTheme === 'light' ? (
+                  <lucideReact.Moon className="w-5 h-5 text-neutral" />
+                ) : (
+                  <lucideReact.Sun className="w-5 h-5 text-warning" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

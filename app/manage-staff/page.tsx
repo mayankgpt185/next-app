@@ -1,17 +1,17 @@
 // app/manage-staff/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { formatDate } from '@/utils/dateUtils';
 
 interface StaffMember {
-    id: number;
+    _id: number;
     firstName: string;
     lastName: string;
-    username: string;
     email: string;
     address: string;
     lastLogin: string;
@@ -20,132 +20,21 @@ interface StaffMember {
 
 export default function ManageStaffPage() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [staffMembers, setStaff] = useState<StaffMember[]>([]);
 
-    // Mock data
-    const staffMembers: StaffMember[] = [
-        {
-            id: 2,
-            firstName: "Mayank",
-            lastName: "Gupta",
-            username: "mayank.staff",
-            email: "mayank.staff@mit.com",
-            address: "Shree Ganesh galaxy, charholi budruk ,pune",
-            lastLogin: "Jan. 18, 2025, 6:38 a.m.",
-            dateJoined: "Nov. 7, 2023"
-        },
-        {
-            id: 4,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 5,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 6,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 7,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 8,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 9,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.", 
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 10,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 11,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 12,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 13,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        },
-        {
-            id: 14,
-            firstName: "aman",
-            lastName: "verma",
-            username: "aman.staff@mit.com",
-            email: "aman.staff@mit.com",
-            address: "dfghjkl;",
-            lastLogin: "Jan. 18, 2025, 11:34 a.m.",
-            dateJoined: "Jan. 18, 2025"
-        }
-    ];
-
-
+    useEffect(() => {
+        const fetchStaff = async () => {
+            try {
+                const response = await fetch('/api/manage-staff');
+                if (!response.ok) throw new Error('Failed to fetch staff');
+                const data = await response.json();
+                setStaff(data);
+            } catch (error) {
+                console.error('Error fetching staff:', error);
+            }
+        };
+        fetchStaff();
+    }, []);
 
 
     const filteredStaff = staffMembers.filter(staff =>
@@ -169,7 +58,7 @@ export default function ManageStaffPage() {
             <div className="card bg-base-200 shadow-xl flex-1">
                 <div className="card-body flex flex-col">
                     <div className="mb-6">
-                        <div className="relative">
+                        <div className="relative w-1/3">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/60 w-5 h-5" />
                             <input
                                 type="text"
@@ -186,10 +75,8 @@ export default function ManageStaffPage() {
                             <table className="table table-pin-rows">
                                 <thead className="sticky top-0 bg-base-300">
                                     <tr>
-                                        <th className="text-base-content">ID</th>
                                         <th className="text-base-content">First Name</th>
                                         <th className="text-base-content">Last Name</th>
-                                        <th className="text-base-content">Username</th>
                                         <th className="text-base-content">Email</th>
                                         <th className="text-base-content">Address</th>
                                         <th className="text-base-content">Last Login</th>
@@ -198,28 +85,38 @@ export default function ManageStaffPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredStaff.map((staff) => (
-                                        <tr key={staff.id} className="hover:bg-base-200">
-                                            <td className="text-base-content">{staff.id}</td>
-                                            <td className="text-base-content">{staff.firstName}</td>
-                                            <td className="text-base-content">{staff.lastName}</td>
-                                            <td className="text-base-content">{staff.username}</td>
-                                            <td className="text-base-content">{staff.email}</td>
-                                            <td className="text-base-content">{staff.address}</td>
-                                            <td className="text-base-content">{staff.lastLogin}</td>
-                                            <td className="text-base-content">{staff.dateJoined}</td>
-                                            <td>
-                                                <div className="flex gap-2">
-                                                    <Button className="btn btn-ghost btn-sm">
-                                                        <Edit className="w-4 h-4 text-info" />
-                                                    </Button>
-                                                    <Button className="btn btn-ghost btn-sm">
-                                                        <Trash2 className="w-4 h-4 text-error" />
-                                                    </Button>
+                                    {filteredStaff.length > 0 ? (
+                                        filteredStaff.map((staff) => (
+                                            <tr key={staff._id} className="hover:bg-base-200">
+                                                <td className="text-base-content">{staff.firstName}</td>
+                                                <td className="text-base-content">{staff.lastName}</td>
+                                                <td className="text-base-content">{staff.email}</td>
+                                                <td className="text-base-content">{staff.address}</td>
+                                                <td className="text-base-content">{staff?.lastLogin || 'N/A'}</td>
+                                                <td className="text-base-content">{formatDate(staff.dateJoined)}</td>
+                                                <td>
+                                                    <div className="flex gap-2">
+                                                        <Link href={`/manage-staff/add?id=${staff._id}`}>
+                                                            <Button className="btn btn-ghost btn-sm">
+                                                                <Edit className="w-4 h-4 text-info" />
+                                                            </Button>
+                                                        </Link>
+                                                        <Button className="btn btn-ghost btn-sm">
+                                                            <Trash2 className="w-4 h-4 text-error" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={9} className="text-center py-8">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <p className="text-lg font-medium text-base-content">No staff members found</p>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
