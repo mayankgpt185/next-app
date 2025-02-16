@@ -7,8 +7,10 @@ import { z } from 'zod';
 import { Button } from '@/app/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { set } from 'lodash';
 
-const formSchema = z.object({
+
+const formSchema = (isUpdate: boolean) => z.object({
   firstName: z.string()
     .nonempty("First name is required")
     .min(2, "First name must be at least 2 characters long"),
@@ -18,7 +20,7 @@ const formSchema = z.object({
   email: z.string()
     .nonempty("Email is required")
     .email("Invalid email address"),
-  password: z.string()
+  password: isUpdate ? z.string().optional() : z.string()
     .nonempty("Password is required")
     .min(6, "Password must be at least 6 characters long"),
   address: z.string()
@@ -27,16 +29,19 @@ const formSchema = z.object({
   dateJoined: z.string().nonempty("Date joined is required"),
 });
 
-type FormData = z.infer<typeof formSchema>;
+
+type FormData = z.infer<ReturnType<typeof formSchema>>;
 
 export default function AddStaffPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const staffRole = "STAFF";
+  const isUpdate = !!id; // If `id` exists, it's an update, otherwise it's a new user
+
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema(isUpdate)),
   });
 
 
