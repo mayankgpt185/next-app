@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { formatDate } from '@/utils/dateUtils';
+import DeletePopup from '../components/ui/deletePopup';
+import toast from 'react-hot-toast';
 
 interface StaffMember {
     _id: number;
@@ -21,6 +23,8 @@ interface StaffMember {
 export default function ManageStaffPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [staffMembers, setStaff] = useState<StaffMember[]>([]);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchStaff = async () => {
@@ -42,6 +46,34 @@ export default function ManageStaffPage() {
             value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
+
+    const handleDeleteClick = (staffId: number) => {
+        setSelectedStaffId(staffId);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedStaffId) return;
+
+        try {
+            console.log('Deleting staff with ID:', selectedStaffId);
+            const response = await fetch(`/api/manage-staff?id=${selectedStaffId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) throw new Error('Failed to delete staff');
+
+            // Remove deleted staff from state
+            setStaff(prevStaff => prevStaff.filter(staff => staff._id !== selectedStaffId));
+            toast.success('Staff deleted successfully');
+        } catch (error) {
+            toast.error('Error deleting staff');
+        }
+
+        // Close modal after deleting
+        setIsDeleteModalOpen(false);
+        setSelectedStaffId(null);
+    };
 
     return (
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
@@ -101,7 +133,11 @@ export default function ManageStaffPage() {
                                                                 <Edit className="w-4 h-4 text-info" />
                                                             </Button>
                                                         </Link>
-                                                        <Button className="btn btn-ghost btn-sm">
+                                                        <Button className="btn btn-ghost btn-sm"
+                                                            onClick={() => {
+                                                                setSelectedStaffId(staff._id);
+                                                                setIsDeleteModalOpen(true)
+                                                            }}>
                                                             <Trash2 className="w-4 h-4 text-error" />
                                                         </Button>
                                                     </div>
@@ -123,6 +159,11 @@ export default function ManageStaffPage() {
                     </div>
                 </div>
             </div>
-        </div>
+            <DeletePopup
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteConfirm}
+            />
+        </div >
     );
 }

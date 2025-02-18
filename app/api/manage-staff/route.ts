@@ -2,7 +2,6 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/app/api/models/user";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { log } from "console";
 
 export async function POST(request: Request) {
   try {
@@ -43,10 +42,9 @@ export async function GET(req: NextRequest) {
   await dbConnect();
 
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");  
-  
+  const id = searchParams.get("id");
+
   if (id) {
-    
     const staffMember = await User.findById(id).select("-password -__v -role");
     if (staffMember) {
       return NextResponse.json(staffMember, { status: 201 });
@@ -110,6 +108,29 @@ export async function PUT(request: Request) {
     console.error("Error updating staff:", error);
     return NextResponse.json(
       { error: "Failed to update staff" },
+      { status: 500 }
+    );
+  }
+}
+export async function DELETE(req: NextRequest) {
+  await dbConnect();
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (id) {
+    const staffMember = await User.findByIdAndDelete(id);
+    if (staffMember) {
+      return NextResponse.json(staffMember, { status: 201 });
+    } else {
+      return NextResponse.json(
+        { message: "Staff member not found to delete" },
+        { status: 404 }
+      );
+    }
+  } else {
+    return NextResponse.json(
+      { error: "No entry selected" },
       { status: 500 }
     );
   }
