@@ -44,7 +44,7 @@ const Sidebar = () => {
             <button className="btn btn-ghost btn-circle" onClick={() => router.push('/manage-staff')}>
               <lucideReact.Users className="w-5 h-5 text-primary" />
             </button>
-            <button className="btn btn-ghost btn-circle">
+            <button className="btn btn-ghost btn-circle" onClick={() => router.push('/manage-student')}>
               <lucideReact.Contact className="w-5 h-5 text-success" />
             </button>
             <button className="btn btn-ghost btn-circle">
@@ -109,13 +109,13 @@ const Sidebar = () => {
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto">
             <ul className="menu p-4 text-base-content">
-              <li>
+              <li onClick={() => router.push('/manage-staff')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.Users className="w-5 h-5 text-primary" />
                   <span>Manage Staff</span>
                 </a>
               </li>
-              <li>
+              <li onClick={() => router.push('/manage-student')}> 
                 <a className="flex items-center space-x-3">
                   <lucideReact.Contact className="w-5 h-5 text-success" />
                   <span>Manage Student</span>

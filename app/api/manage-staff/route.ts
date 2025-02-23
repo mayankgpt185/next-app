@@ -55,7 +55,8 @@ export async function GET(req: NextRequest) {
       );
     }
   } else {
-    const staffMembers = await User.find()
+    const role = searchParams.get("role");
+    const staffMembers = await User.find({role: role})
       .select("-password -__v -role")
       .sort({ createdAt: -1 });
     return NextResponse.json(staffMembers, { status: 200 });
