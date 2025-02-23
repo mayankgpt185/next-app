@@ -1,22 +1,25 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/card';
-const lucideReact = require('lucide-react');
 import { useRouter } from 'next/navigation';
+import { useSidebarStore } from '../store/useSidebarStore';
+const lucideReact = require('lucide-react');
 
 const Sidebar = () => {
   const router = useRouter();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { isExpanded, toggleSidebar } = useSidebarStore();
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
+  const [currentPath, setCurrentPath] = useState('');
 
   useEffect(() => {
     // Initialize theme state
     setCurrentTheme(document.documentElement.getAttribute('data-theme') as 'light' | 'dark' || 'light');
+    setCurrentPath(window.location.pathname);
   }, []);
 
-  const toggleSidebar = () => {
-    setIsExpanded(!isExpanded);
-  };
+  // const toggleSidebar = () => {
+  //   setIsExpanded(!isExpanded);
+  // };
 
   const setTheme = (theme: 'light' | 'dark') => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -25,6 +28,11 @@ const Sidebar = () => {
 
   const getCurrentTheme = () => {
     return document.documentElement.getAttribute('data-theme') || 'light';
+  };
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
+    setCurrentPath(path);
   };
 
   return (
@@ -41,10 +49,16 @@ const Sidebar = () => {
               <lucideReact.ChevronRight className="w-4 h-4 text-base-content" />
             </button>
 
-            <button className="btn btn-ghost btn-circle" onClick={() => router.push('/manage-staff')}>
+            <button
+              className={`btn btn-ghost btn-circle ${currentPath === '/manage-staff' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/manage-staff')}
+            >
               <lucideReact.Users className="w-5 h-5 text-primary" />
             </button>
-            <button className="btn btn-ghost btn-circle" onClick={() => router.push('/manage-student')}>
+            <button
+              className={`btn btn-ghost btn-circle ${currentPath === '/manage-student' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/manage-student')}
+            >
               <lucideReact.Contact className="w-5 h-5 text-success" />
             </button>
             <button className="btn btn-ghost btn-circle">
@@ -109,13 +123,13 @@ const Sidebar = () => {
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto">
             <ul className="menu p-4 text-base-content">
-              <li onClick={() => router.push('/manage-staff')}>
+              <li className={currentPath === '/manage-staff' ? 'active' : ''} onClick={() => handleNavigation('/manage-staff')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.Users className="w-5 h-5 text-primary" />
                   <span>Manage Staff</span>
                 </a>
               </li>
-              <li onClick={() => router.push('/manage-student')}> 
+              <li className={currentPath === '/manage-student' ? 'active' : ''} onClick={() => handleNavigation('/manage-student')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.Contact className="w-5 h-5 text-success" />
                   <span>Manage Student</span>
