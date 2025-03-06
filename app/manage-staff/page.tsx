@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -25,6 +25,7 @@ export default function ManageStaffPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
     const staffRole = "STAFF";
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchStaff = async () => {
@@ -35,6 +36,8 @@ export default function ManageStaffPage() {
                 setStaff(data);
             } catch (error) {
                 console.error('Error fetching staff:', error);
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchStaff();
@@ -74,6 +77,17 @@ export default function ManageStaffPage() {
         setIsDeleteModalOpen(false);
         setSelectedStaffId(null);
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-base-100">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
+                    <p className="mt-4 text-base-content">Loading staff...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">

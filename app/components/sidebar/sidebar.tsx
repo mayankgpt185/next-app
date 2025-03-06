@@ -40,7 +40,7 @@ const Sidebar = () => {
       {/* Narrow Sidebar - Fixed */}
       {!isExpanded && (
         <div className="w-16 bg-base-300 flex flex-col items-center py-4 border-r border-base-200 shrink-0 transition-colors duration-300 ease-in-out">
-          <div className="flex flex-col items-center space-y-5 flex-1">
+          <div className="flex flex-col items-center space-y-4 flex-1">
             {/* Toggle button */}
             <button
               onClick={toggleSidebar}
@@ -61,7 +61,9 @@ const Sidebar = () => {
             >
               <lucideReact.Contact className="w-5 h-5 text-success" />
             </button>
-            <button className="btn btn-ghost btn-circle">
+            <button className={`btn btn-ghost btn-circle ${currentPath === '/manage-course' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/manage-course')}
+            >
               <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
             </button>
             <button className="btn btn-ghost btn-circle">
@@ -135,7 +137,7 @@ const Sidebar = () => {
                   <span>Manage Student</span>
                 </a>
               </li>
-              <li>
+              <li className={currentPath === '/manage-course' ? 'active' : ''} onClick={() => handleNavigation('/manage-course')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
                   <span>Manage Course</span>
