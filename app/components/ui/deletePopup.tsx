@@ -5,9 +5,10 @@ interface DeletePopupProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
+    message?: string;
 }
 
-const DeletePopup: React.FC<DeletePopupProps> = ({ isOpen, onClose, onConfirm }) => (
+const DeletePopup: React.FC<DeletePopupProps> = ({ isOpen, onClose, onConfirm, message }) => (
     <AlertDialog.Root open={isOpen} onOpenChange={onClose}>
         <AlertDialog.Portal>
             <AlertDialog.Overlay className="fixed inset-0 bg-blackA6 data-[state=open]:animate-overlayShow" />
@@ -16,7 +17,7 @@ const DeletePopup: React.FC<DeletePopupProps> = ({ isOpen, onClose, onConfirm })
                     Are you sure?
                 </AlertDialog.Title>
                 <AlertDialog.Description className="mb-5 mt-3 text-sm">
-                    This will permanently delete this staff member.
+                    {message}
                 </AlertDialog.Description>
                 <div className="flex justify-end gap-4">
                     <AlertDialog.Cancel asChild>

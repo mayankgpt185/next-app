@@ -188,6 +188,7 @@ export default function ManageCoursePage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleDeleteConfirm}
+                message="This will permanently delete this course."
             />
         </div >
     );

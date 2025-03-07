@@ -9,6 +9,7 @@ export interface IUser extends Document {
   role: string;
   dateJoined: Date;
   lastLogin: Date;
+  isActive: boolean;
 }
 
 const userSchema = new mongoose.Schema({
@@ -19,7 +20,8 @@ const userSchema = new mongoose.Schema({
   address: { type: String, required: true },
   role: { type: String, required: true },
   dateJoined: { type: Date, required: true },
-  lastLogin: { type: Date, required: false }
+  lastLogin: { type: Date, required: false },
+  isActive: { type: Boolean, default: true }
 }, {
   timestamps: true
 });

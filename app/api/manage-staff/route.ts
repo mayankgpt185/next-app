@@ -45,7 +45,9 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get("id");
 
   if (id) {
-    const staffMember = await User.findById(id).select("-password -__v -role");
+    const staffMember = await User.findById(id)
+      // .where({ isActive: true })
+      .select("-password -__v -role");
     if (staffMember) {
       return NextResponse.json(staffMember, { status: 201 });
     } else {
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
     }
   } else {
     const role = searchParams.get("role");
-    const staffMembers = await User.find({role: role})
+    const staffMembers = await User.find({ role: role, isActive: true })
       .select("-password -__v -role")
       .sort({ createdAt: -1 });
     return NextResponse.json(staffMembers, { status: 200 });
@@ -120,7 +122,7 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
 
   if (id) {
-    const staffMember = await User.findByIdAndDelete(id);
+    const staffMember = await User.findByIdAndUpdate(id, { isActive: false });
     if (staffMember) {
       return NextResponse.json(staffMember, { status: 201 });
     } else {
@@ -130,9 +132,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
   } else {
-    return NextResponse.json(
-      { error: "No entry selected" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "No entry selected" }, { status: 500 });
   }
 }

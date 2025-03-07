@@ -177,6 +177,7 @@ export default function ManageStudentPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleDeleteConfirm}
+                message="This will permanently delete this student."
             />
         </div >
     );

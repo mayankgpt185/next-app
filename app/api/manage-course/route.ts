@@ -43,9 +43,9 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-
     if (id) {
       const course = await Course.findById(id)
+        .where({ isActive: true })
         .populate('class')
         .populate('section')
         .select("-__v");
@@ -133,9 +133,8 @@ export async function DELETE(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-
   if (id) {
-    const course = await Course.findByIdAndDelete(id);
+    const course = await Course.findByIdAndUpdate(id, { isActive: false });
     if (course) {
       return NextResponse.json(course, { status: 201 });
     } else {
