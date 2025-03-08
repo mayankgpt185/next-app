@@ -66,19 +66,29 @@ const Sidebar = () => {
             >
               <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
             </button>
-            <button className="btn btn-ghost btn-circle">
+            <button className={`btn btn-ghost btn-circle ${currentPath === '/manage-subject' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/manage-subject')}
+            >
               <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
             </button>
-            <button className="btn btn-ghost btn-circle">
+            <button className={`btn btn-ghost btn-circle ${currentPath === '/manage-session' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/manage-session')}
+            >
               <lucideReact.CalendarCog className="w-5 h-5 text-warning" />
             </button>
-            <button className="btn btn-ghost btn-circle">
+            <button className={`btn btn-ghost btn-circle ${currentPath === '/view-attendance' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/view-attendance')}
+            >
               <lucideReact.FileChartLine className="w-5 h-5 text-info" />
             </button>
-            <button className="btn btn-ghost btn-circle">
+              <button className={`btn btn-ghost btn-circle ${currentPath === '/feedback' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/feedback')}
+            >
               <lucideReact.Sticker className="w-5 h-5 text-error" />
             </button>
-            <button className="btn btn-ghost btn-circle">
+            <button className={`btn btn-ghost btn-circle ${currentPath === '/leave' ? 'btn-active' : ''}`}
+              onClick={() => handleNavigation('/leave')}
+            >
               <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
             </button>
           </div>
@@ -143,31 +153,31 @@ const Sidebar = () => {
                   <span>Manage Course</span>
                 </a>
               </li>
-              <li>
+              <li className={currentPath === '/manage-subject' ? 'active' : ''} onClick={() => handleNavigation('/manage-subject')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
                   <span>Manage Subject</span>
                 </a>
               </li>
-              <li>
+              <li className={currentPath === '/manage-session' ? 'active' : ''} onClick={() => handleNavigation('/manage-session')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.CalendarCog className="w-5 h-5 text-warning" />
                   <span>Manage Session</span>
                 </a>
               </li>
-              <li>
+              <li className={currentPath === '/view-attendance' ? 'active' : ''} onClick={() => handleNavigation('/view-attendance')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.FileChartLine className="w-5 h-5 text-info" />
                   <span>View Attendance</span>
                 </a>
               </li>
-              <li>
+              <li className={currentPath === '/feedback' ? 'active' : ''} onClick={() => handleNavigation('/feedback')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.Sticker className="w-5 h-5 text-error" />
                   <span>Feedback</span>
                 </a>
               </li>
-              <li>
+              <li className={currentPath === '/leave' ? 'active' : ''} onClick={() => handleNavigation('/leave')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
                   <span>Leave</span>

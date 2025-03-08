@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const course = await Course.create({
       name: data.name,
       class: data.classId,
-      section: data.sectionId
+      section: data.sectionId,
     });
 
     return NextResponse.json(course);
@@ -42,12 +42,12 @@ export async function GET(request: Request) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
     if (id) {
       const course = await Course.findById(id)
         .where({ isActive: true })
-        .populate('class')
-        .populate('section')
+        .populate("class")
+        .populate("section")
         .select("-__v");
 
       if (!course) {
@@ -60,8 +60,9 @@ export async function GET(request: Request) {
       return NextResponse.json(course);
     } else {
       const courses = await Course.find({})
-        .populate('class')
-        .populate('section')
+        .where({ isActive: true })
+        .populate("class")
+        .populate("section")
         .select("-__v");
 
       return NextResponse.json(courses);
@@ -79,7 +80,7 @@ export async function PUT(request: Request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
     const data = await request.json();
 
     if (!id) {
@@ -104,18 +105,17 @@ export async function PUT(request: Request) {
       id,
       {
         name: data.name,
-        class: data.classId,  // Use the ObjectId directly
-        section: data.sectionId,  // Use the ObjectId directly
-        modifiedDate: new Date()
+        class: data.classId, // Use the ObjectId directly
+        section: data.sectionId, // Use the ObjectId directly
+        modifiedDate: new Date(),
       },
       { new: true }
-    ).populate('class').populate('section');
+    )
+      .populate("class")
+      .populate("section");
 
     if (!course) {
-      return NextResponse.json(
-        { error: "Course not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
     return NextResponse.json(course);
