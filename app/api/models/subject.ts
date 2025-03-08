@@ -6,6 +6,8 @@ export interface ISubject extends Document {
     courseId: string;
     staffId: string;
     isActive: boolean;
+    academicStartYear: Date;
+    academicEndYear: Date;
     addedDate: Date;
     modifiedDate: Date;
   }
@@ -17,6 +19,8 @@ const SubjectSchema = new mongoose.Schema(
     courseId: { type: mongoose.Schema.Types.ObjectId, ref: "courses", required: true },
     staffId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
     isActive: { type: Boolean, default: true },
+    academicStartYear: { type: Date, required: true },
+    academicEndYear: { type: Date, required: true },
     addedDate: { type: Date, default: Date.now },
     modifiedDate: { type: Date },
   },

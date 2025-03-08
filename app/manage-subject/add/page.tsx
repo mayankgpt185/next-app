@@ -32,6 +32,19 @@ const formSchema = (isUpdate: boolean) => z.object({
         .min(2, "Subject name must be at least 2 characters long"),
     courseId: z.string().nonempty("Course is required"),
     staffId: z.string().nonempty("Staff is required"),
+    academicStartYear: z.string()
+        .nonempty("Academic start year is required")
+        .refine(date => !isNaN(Date.parse(date)), {
+            message: "Invalid date format"
+        }),
+    academicEndYear: z.string()
+        .nonempty("Academic end year is required")
+        .refine(date => !isNaN(Date.parse(date)), {
+            message: "Invalid date format"
+        })
+        .refine(date => !isNaN(Date.parse(date)), {
+            message: "Invalid date format"
+        })
 });
 
 type FormData = z.infer<ReturnType<typeof formSchema>>;
@@ -68,12 +81,12 @@ export default function AddSubjectPage() {
 
                 setCourses(coursesData);
                 setStaffs(staffsData);
-                
+
                 // After classes and sections are loaded, fetch course data if editing
                 if (id) {
                     fetchSubjectData(coursesData, staffsData);
                 }
-                
+
                 setIsLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -90,14 +103,22 @@ export default function AddSubjectPage() {
                 const data = await response.json();
 
                 setValue("subject", data.subject || '');
-                console.log(coursesData, staffsData);
-                console.log(data);
                 
+                // Format dates for the form inputs
+                if (data.academicStartYear) {
+                    const startDate = new Date(data.academicStartYear);
+                    setValue("academicStartYear", startDate.toISOString().split('T')[0]);
+                }
+                
+                if (data.academicEndYear) {
+                    const endDate = new Date(data.academicEndYear);
+                    setValue("academicEndYear", endDate.toISOString().split('T')[0]);
+                }
+
                 // Find the matching class and section from the loaded data
                 const matchingCourse = coursesData.find(c => c._id === data.courseId._id);
                 const matchingStaff = staffsData.find(s => s._id === data.staffId._id);
-                console.log(matchingCourse, matchingStaff);
-                
+
                 setValue("courseId", matchingCourse?._id || '');
                 setValue("staffId", matchingStaff?._id || '');
             } catch (error) {
@@ -109,10 +130,17 @@ export default function AddSubjectPage() {
     }, [id, setValue]); // Remove classes and sections from dependencies
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
-        const method = id ? 'PUT' : 'POST';
-        const userData = id ? { ...data, id } : {
+        // Format dates to ensure they're in the correct format
+        const formattedData = {
             ...data,
+            academicStartYear: data.academicStartYear ? new Date(data.academicStartYear).toISOString() : undefined,
+            academicEndYear: data.academicEndYear ? new Date(data.academicEndYear).toISOString() : undefined,
         };
+
+        console.log(formattedData);
+        const method = id ? 'PUT' : 'POST';
+        const userData = id ? { ...formattedData, id } : formattedData;
+        
         const response = await fetch(`/api/manage-subject${id ? `?id=${id}` : ''}`, {
             method: method,
             headers: {
@@ -173,8 +201,8 @@ export default function AddSubjectPage() {
                                 <label className="label">
                                     <span className="label-text text-base-content">Course</span>
                                 </label>
-                                <select 
-                                    {...register("courseId")} 
+                                <select
+                                    {...register("courseId")}
                                     className={`select select-bordered w-full bg-base-100 text-base-content ${errors.courseId ? 'select-error' : ''}`}
                                 >
                                     <option value="">Select a course</option>
@@ -196,8 +224,8 @@ export default function AddSubjectPage() {
                                 <label className="label">
                                     <span className="label-text text-base-content">Staff</span>
                                 </label>
-                                <select 
-                                    {...register("staffId")} 
+                                <select
+                                    {...register("staffId")}
                                     className={`select select-bordered w-full bg-base-100 text-base-content ${errors.staffId ? 'select-error' : ''}`}
                                 >
                                     <option value="">Select a staff</option>
@@ -210,6 +238,40 @@ export default function AddSubjectPage() {
                                 {errors.staffId && (
                                     <label className="label">
                                         <span className="label-text-alt text-error">{errors.staffId.message}</span>
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* Academic Start Year */}
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Academic Start Year</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    {...register("academicStartYear")}
+                                    className={`input input-bordered w-full bg-base-100 text-base-content ${errors.academicStartYear ? 'input-error' : ''}`}
+                                />
+                                {errors.academicStartYear && (
+                                    <label className="label">
+                                        <span className="label-text-alt text-error">{errors.academicStartYear.message}</span>
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* Academic End Year */}
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Academic End Year</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    {...register("academicEndYear")}
+                                    className={`input input-bordered w-full bg-base-100 text-base-content ${errors.academicEndYear ? 'input-error' : ''}`}
+                                />
+                                {errors.academicEndYear && (
+                                    <label className="label">
+                                        <span className="label-text-alt text-error">{errors.academicEndYear.message}</span>
                                     </label>
                                 )}
                             </div>

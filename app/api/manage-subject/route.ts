@@ -23,7 +23,9 @@ export async function POST(request: Request) {
     const subject = await Subject.create({
       subject: data.subject,
       courseId: data.courseId,
-      staffId: data.staffId
+      staffId: data.staffId,
+      academicStartYear: data.academicStartYear,
+      academicEndYear: data.academicEndYear,
     });
 
     return NextResponse.json(subject);
@@ -41,17 +43,17 @@ export async function GET(request: Request) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
     if (id) {
       const subject = await Subject.findById(id)
         .where({ isActive: true })
-        .populate('courseId')
-        .populate('staffId')
+        .populate("courseId")
+        .populate("staffId")
         .select("-__v");
 
       if (!subject) {
         return NextResponse.json(
-            { error: "Subject not found" },
+          { error: "Subject not found" },
           { status: 404 }
         );
       }
@@ -59,8 +61,9 @@ export async function GET(request: Request) {
       return NextResponse.json(subject);
     } else {
       const subjects = await Subject.find({})
-        .populate('courseId')
-        .populate('staffId')
+        .where({ isActive: true })
+        .populate("courseId")
+        .populate("staffId")
         .select("-__v");
 
       return NextResponse.json(subjects);
@@ -78,7 +81,7 @@ export async function PUT(request: Request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
     const data = await request.json();
 
     if (!id) {
@@ -103,18 +106,17 @@ export async function PUT(request: Request) {
       id,
       {
         subject: data.subject,
-        courseId: data.courseId,  // Use the ObjectId directly
-        staffId: data.staffId,  // Use the ObjectId directly
-        modifiedDate: new Date()
+        courseId: data.courseId, // Use the ObjectId directly
+        staffId: data.staffId, // Use the ObjectId directly
+        modifiedDate: new Date(),
       },
       { new: true }
-    ).populate('courseId').populate('staffId');
+    )
+      .populate("courseId")
+      .populate("staffId");
 
     if (!subject) {
-      return NextResponse.json(
-        { error: "Subject not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Subject not found" }, { status: 404 });
     }
 
     return NextResponse.json(subject);

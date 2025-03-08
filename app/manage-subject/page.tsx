@@ -21,6 +21,8 @@ interface Subject {
         lastName: string;
         _id: string;
     };
+    academicStartYear: string;
+    academicEndYear: string;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -54,13 +56,13 @@ export default function ManageSubjectPage() {
     const filteredSubjects = subjects.filter(subject => {
         // Search in subject name
         if (subject.subject.toLowerCase().includes(searchTerm.toLowerCase())) return true;
-        
+
         // Search in class number
         // if (course.class && course.class.classNumber.toString().toLowerCase().includes(searchTerm.toLowerCase())) return true;
-        
+
         // Search in section
         if (subject.courseId && subject.courseId.name.toLowerCase().includes(searchTerm.toLowerCase())) return true;
-        
+
         return false;
     });
 
@@ -138,6 +140,7 @@ export default function ManageSubjectPage() {
                                         <th className="text-base-content">Subject Name</th>
                                         <th className="text-base-content">Course</th>
                                         <th className="text-base-content">Staff</th>
+                                        <th className="text-base-content">Academic Year</th>
                                         <th className="text-base-content">Created Date</th>
                                         <th className="text-base-content">Updated Date</th>
                                         <th className="text-base-content">Actions</th>
@@ -150,6 +153,9 @@ export default function ManageSubjectPage() {
                                                 <td className="text-base-content">{subject.subject}</td>
                                                 <td className="text-base-content">{subject.courseId.name}</td>
                                                 <td className="text-base-content">{subject.staffId.firstName} {subject.staffId.lastName}</td>
+                                                <td className="text-base-content">
+                                                    {new Date(subject.academicStartYear).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {new Date(subject.academicEndYear).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                                </td>
                                                 <td className="text-base-content">{formatDate(subject.createdAt)}</td>
                                                 <td className="text-base-content">{formatDate(subject?.updatedAt) || 'N/A'}</td>
                                                 <td>

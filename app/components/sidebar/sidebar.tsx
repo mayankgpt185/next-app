@@ -71,11 +71,11 @@ const Sidebar = () => {
             >
               <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
             </button>
-            <button className={`btn btn-ghost btn-circle ${currentPath === '/manage-session' ? 'btn-active' : ''}`}
+            {/* <button className={`btn btn-ghost btn-circle ${currentPath === '/manage-session' ? 'btn-active' : ''}`}
               onClick={() => handleNavigation('/manage-session')}
             >
               <lucideReact.CalendarCog className="w-5 h-5 text-warning" />
-            </button>
+            </button> */}
             <button className={`btn btn-ghost btn-circle ${currentPath === '/view-attendance' ? 'btn-active' : ''}`}
               onClick={() => handleNavigation('/view-attendance')}
             >
@@ -159,12 +159,12 @@ const Sidebar = () => {
                   <span>Manage Subject</span>
                 </a>
               </li>
-              <li className={currentPath === '/manage-session' ? 'active' : ''} onClick={() => handleNavigation('/manage-session')}>
+              {/* <li className={currentPath === '/manage-session' ? 'active' : ''} onClick={() => handleNavigation('/manage-session')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.CalendarCog className="w-5 h-5 text-warning" />
                   <span>Manage Session</span>
                 </a>
-              </li>
+              </li> */}
               <li className={currentPath === '/view-attendance' ? 'active' : ''} onClick={() => handleNavigation('/view-attendance')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.FileChartLine className="w-5 h-5 text-info" />
