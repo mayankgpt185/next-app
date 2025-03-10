@@ -42,55 +42,79 @@ const Sidebar = () => {
         <div className="w-16 bg-base-300 flex flex-col items-center py-4 border-r border-base-200 shrink-0 transition-colors duration-300 ease-in-out">
           <div className="flex flex-col items-center space-y-4 flex-1">
             {/* Toggle button */}
-            <button
-              onClick={toggleSidebar}
-              className="btn btn-sm btn-neutral btn-circle"
-            >
-              <lucideReact.ChevronRight className="w-4 h-4 text-base-content" />
-            </button>
+            <div className="tooltip tooltip-right" data-tip="Expand">
+              <button
+                onClick={toggleSidebar}
+                className="btn btn-sm btn-primary"
+              >
+                <lucideReact.ChevronRight className="w-4 h-4 text-primary-content" />
+              </button>
+            </div>
 
-            <button
-              className={`btn btn-ghost btn-circle ${currentPath === '/manage-staff' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/manage-staff')}
-            >
-              <lucideReact.Users className="w-5 h-5 text-primary" />
-            </button>
-            <button
-              className={`btn btn-ghost btn-circle ${currentPath === '/manage-student' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/manage-student')}
-            >
-              <lucideReact.Contact className="w-5 h-5 text-success" />
-            </button>
-            <button className={`btn btn-ghost btn-circle ${currentPath === '/manage-course' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/manage-course')}
-            >
+            <div className="tooltip tooltip-right" data-tip="Manage Staff">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-staff' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-staff')}
+              >
+                <lucideReact.Users className="w-5 h-5 text-primary" />
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="Manage Student">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-student' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-student')}
+              >
+                <lucideReact.Contact className="w-5 h-5 text-success" />
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="Manage Course">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-course' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-course')}
+              >
               <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
-            </button>
-            <button className={`btn btn-ghost btn-circle ${currentPath === '/manage-subject' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/manage-subject')}
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="Manage Subject">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-subject' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-subject')}
+              >
+                <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
+              </button> 
+            </div>
+            <div className="tooltip tooltip-right" data-tip="Take Attendance">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/take-attendance' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/take-attendance')}
             >
-              <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
-            </button>
-            <button className={`btn btn-ghost btn-circle ${currentPath === '/take-attendance' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/take-attendance')}
-            >
-              <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
-            </button>
-            <button className={`btn btn-ghost btn-circle ${currentPath === '/view-attendance' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/view-attendance')}
-            >
-              <lucideReact.FileChartLine className="w-5 h-5 text-info" />
-            </button>
-              <button className={`btn btn-ghost btn-circle ${currentPath === '/feedback' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/feedback')}
-            >
+                <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="View Attendance">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/view-attendance' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/view-attendance')}
+              >
+                <lucideReact.FileChartLine className="w-5 h-5 text-info" />
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="Feedback">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/feedback' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/feedback')}
+              >
               <lucideReact.Sticker className="w-5 h-5 text-error" />
-            </button>
-            <button className={`btn btn-ghost btn-circle ${currentPath === '/leave' ? 'btn-active' : ''}`}
-              onClick={() => handleNavigation('/leave')}
-            >
-              <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
-            </button>
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="Leave">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/leave' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/leave')}
+              >
+                <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
+              </button>
+            </div>
           </div>
 
           {/* Bottom section */}
@@ -124,11 +148,13 @@ const Sidebar = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={toggleSidebar}
-                className="btn btn-sm btn-neutral btn-circle"
+                className="btn btn-sm btn-primary"
               >
-                <lucideReact.ChevronLeft className="w-4 h-4 text-base-content" />
+                <lucideReact.ChevronLeft className="w-4 h-4 text-primary-content" />
               </button>
-              <div className="badge badge-primary">CJS</div>
+              <div className="flex items-center gap-2">
+                <div className="badge badge-primary p-3">CJS</div>
+              </div>
             </div>
           </div>
 
