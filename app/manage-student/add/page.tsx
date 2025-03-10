@@ -9,6 +9,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { set } from 'lodash';
 
+interface Class {
+  _id: string;
+  classNumber: number;
+}
+
+interface Section {
+  _id: string;
+  section: string;
+}
 
 const formSchema = (isUpdate: boolean) => z.object({
   firstName: z.string()
@@ -27,6 +36,8 @@ const formSchema = (isUpdate: boolean) => z.object({
     .nonempty("Address is required")
     .min(5, "Address must be at least 5 characters long"),
   dateJoined: z.string().nonempty("Date joined is required"),
+  classId: z.string().nonempty("Class is required"),
+  sectionId: z.string().nonempty("Section is required"),
 });
 
 
@@ -38,6 +49,9 @@ export default function AddStudentPage() {
   const id = searchParams.get('id');
   const studentRole = "STUDENT";
   const isUpdate = !!id; // If `id` exists, it's an update, otherwise it's a new user
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
@@ -46,25 +60,62 @@ export default function AddStudentPage() {
 
 
   useEffect(() => {
-    if (id) {
-      const fetchUserData = async () => {
-        try {
-          const response = await fetch(`/api/manage-staff?id=${id}`);
-          if (!response.ok) throw new Error('Failed to fetch user data');
-          const data = await response.json();
+    const fetchData = async () => {
+      try {
+        const [classesResponse, sectionsResponse] = await Promise.all([
+          fetch('/api/classes'),
+          fetch('/api/sections')
+        ]);
 
-          setValue("firstName", data.firstName || '');
-          setValue("lastName", data.lastName || '');
-          setValue("email", data.email || '');
-          setValue("address", data.address || '');
-          setValue("dateJoined", new Date(data.dateJoined).toISOString().split('T')[0]);
-
-        } catch (error) {
-          toast.error('Error fetching student data');
+        if (!classesResponse.ok || !sectionsResponse.ok) {
+          throw new Error('Failed to fetch data');
         }
-      };
-      fetchUserData();
-    }
+
+        const classesData = await classesResponse.json();
+        const sectionsData = await sectionsResponse.json();
+
+        setClasses(classesData);
+        setSections(sectionsData);
+
+        // After classes and sections are loaded, fetch course data if editing
+        if (id) {
+          fetchUserData(classesData, sectionsData);
+        }
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load classes and sections');
+        setIsLoading(false);
+      }
+    };
+
+    const fetchUserData = async (classesData: Class[], sectionsData: Section[]) => {
+      try {
+        const response = await fetch(`/api/manage-staff?id=${id}`);
+        const studentClassResponse = await fetch(`/api/student-class`);
+        if (!response.ok || !studentClassResponse.ok) throw new Error('Failed to fetch user data');
+        const data = await response.json();
+        const studentClassData = await studentClassResponse.json();
+        debugger;
+        setValue("firstName", data.firstName || '');
+        setValue("lastName", data.lastName || '');
+        setValue("email", data.email || '');
+        setValue("address", data.address || '');
+        setValue("dateJoined", new Date(data.dateJoined).toISOString().split('T')[0]);
+        // Find the matching class and section from the loaded data
+        const matchingClass = studentClassData.find((cls: any) => cls.studentId === data._id);
+        const matchingSection = sectionsData.find(s => s.section === matchingClass?.section.section);
+        setValue("classId", matchingClass?.class._id || '');
+        setValue("sectionId", matchingSection?._id || '');
+
+      } catch (error) {
+        toast.error('Error fetching student data');
+      }
+    };
+
+    // Call fetchData to start the data loading process
+    fetchData();
   }, [id, setValue]);
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
@@ -88,8 +139,27 @@ export default function AddStudentPage() {
     if (!response.ok) {
       toast.error(responseData.error || 'An error occurred');
     } else {
-      toast.success(id ? 'Student member updated successfully!' : 'Student member created successfully!');
-      router.push('/manage-student');
+      const studentClassData = {
+        studentId: responseData._id,
+        classId: data.classId,
+        sectionId: data.sectionId,
+      }
+      const studentClassResponse = await fetch(`/api/student-class${responseData._id ? `?studentId=${responseData._id}` : ''}`, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(studentClassData),
+      });
+
+      const studentClassResponseData = await studentClassResponse.json();
+
+      if (!studentClassResponse.ok) {
+        toast.error(studentClassResponseData.error || 'An error occurred');
+      } else {
+        toast.success(id ? 'Student member updated successfully!' : 'Student member created successfully!');
+        router.push('/manage-student');
+      }
     }
   };
 
@@ -175,6 +245,51 @@ export default function AddStudentPage() {
                   )}
                 </div>
               )}
+              {/* Class Dropdown */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text text-base-content">Class</span>
+                </label>
+                <select
+                  {...register("classId")}
+                  className={`select select-bordered w-full bg-base-100 text-base-content ${errors.classId ? 'select-error' : ''}`}
+                >
+                  <option value="">Select a class</option>
+                  {classes.map((classItem) => (
+                    <option key={classItem._id} value={classItem._id} className="text-base-content bg-base-100">
+                      {classItem.classNumber}
+                    </option>
+                  ))}
+                </select>
+                {errors.classId && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{errors.classId.message}</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Section Dropdown */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text text-base-content">Section</span>
+                </label>
+                <select
+                  {...register("sectionId")}
+                  className={`select select-bordered w-full bg-base-100 text-base-content ${errors.sectionId ? 'select-error' : ''}`}
+                >
+                  <option value="">Select a section</option>
+                  {sections.map((section) => (
+                    <option key={section._id} value={section._id} className="text-base-content bg-base-100">
+                      {section.section}
+                    </option>
+                  ))}
+                </select>
+                {errors.sectionId && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{errors.sectionId.message}</span>
+                  </label>
+                )}
+              </div>
 
               {/* Date Joined */}
               <div className="form-control w-full">

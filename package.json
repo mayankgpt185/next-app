@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "cross-env NODE_OPTIONS='--inspect' next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -50,6 +50,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/lodash": "^4.17.15",
     "@types/mongodb": "^4.0.7",
+    "cross-env": "^7.0.3",
     "daisyui": "^4.12.23"
   }
 }

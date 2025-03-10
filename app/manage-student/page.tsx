@@ -13,6 +13,8 @@ interface StudentMember {
     _id: number;
     firstName: string;
     lastName: string;
+    class: string;
+    section: string;
     email: string;
     address: string;
     lastLogin: string;
@@ -31,8 +33,18 @@ export default function ManageStudentPage() {
         const fetchStudent = async () => {
             try {
                 const response = await fetch(`/api/manage-staff?role=${studentRole}`);
-                if (!response.ok) throw new Error('Failed to fetch student');
+                const studentClassResponse = await fetch(`/api/student-class`);
+                if (!response.ok || !studentClassResponse.ok) throw new Error('Failed to fetch student');
                 const data = await response.json();
+                const studentClassData = await studentClassResponse.json();
+                debugger;
+                data.forEach((student: StudentMember) => {
+                    const matchingClass = studentClassData.find((cls: any) => cls.studentId === student._id);
+                    if (matchingClass) {
+                        student.class = matchingClass.class.classNumber || '';
+                        student.section = matchingClass.section.section || '';
+                    }
+                });
                 setStudent(data);
             } catch (error) {
                 console.error('Error fetching student:', error);
@@ -123,6 +135,7 @@ export default function ManageStudentPage() {
                                     <tr>
                                         <th className="text-base-content">First Name</th>
                                         <th className="text-base-content">Last Name</th>
+                                        <th className="text-base-content">Class</th>
                                         <th className="text-base-content">Email</th>
                                         <th className="text-base-content">Address</th>
                                         <th className="text-base-content">Last Login</th>
@@ -136,6 +149,7 @@ export default function ManageStudentPage() {
                                             <tr key={student._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{student.firstName}</td>
                                                 <td className="text-base-content">{student.lastName}</td>
+                                                <td className="text-base-content">{student.class} {student.section}</td>
                                                 <td className="text-base-content">{student.email}</td>
                                                 <td className="text-base-content">{student.address}</td>
                                                 <td className="text-base-content">{student?.lastLogin || 'N/A'}</td>

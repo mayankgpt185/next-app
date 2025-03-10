@@ -6,7 +6,7 @@ export async function GET() {
   try {
     await dbConnect();
 
-    const sections = await Section.find().sort({ name: 1 });
+    const sections = await Section.find().sort({ section: 1 });
     return NextResponse.json(sections);
   } catch (error) {
     return NextResponse.json(
