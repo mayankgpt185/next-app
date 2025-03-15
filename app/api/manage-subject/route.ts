@@ -3,6 +3,7 @@ import Subject from "../models/subject";
 import { NextRequest, NextResponse } from "next/server";
 import User from "@/app/api/models/user";
 import { Course } from "../models/course";
+import Session from "../models/session";
 
 export async function POST(request: Request) {
   try {
@@ -12,10 +13,11 @@ export async function POST(request: Request) {
     // Verify that class and section exist
     const courseExists = await Course.findById(data.courseId);
     const staffExists = await User.findById(data.staffId);
+    const academicYearExists = await Session.findById(data.academicYearId);
 
-    if (!courseExists || !staffExists) {
+    if (!courseExists || !staffExists || !academicYearExists) {
       return NextResponse.json(
-        { error: "Invalid course or staff" },
+        { error: "Invalid course or staff or academic year" },
         { status: 400 }
       );
     }
@@ -24,8 +26,7 @@ export async function POST(request: Request) {
       subject: data.subject,
       courseId: data.courseId,
       staffId: data.staffId,
-      academicStartYear: data.academicStartYear,
-      academicEndYear: data.academicEndYear,
+      academicYear: data.academicYear,
     });
 
     return NextResponse.json(subject);
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
         .where({ isActive: true })
         .populate("courseId")
         .populate("staffId")
+        .populate("academicYearId")
         .select("-__v");
 
       if (!subject) {
@@ -64,6 +66,7 @@ export async function GET(request: Request) {
         .where({ isActive: true })
         .populate("courseId")
         .populate("staffId")
+        .populate("academicYearId")
         .select("-__v");
 
       return NextResponse.json(subjects);
@@ -94,10 +97,11 @@ export async function PUT(request: Request) {
     // Find class and section by their IDs
     const courseExists = await Course.findById(data.courseId);
     const staffExists = await User.findById(data.staffId);
+    const academicYearExists = await Session.findById(data.academicYearId);
 
-    if (!courseExists || !staffExists) {
+    if (!courseExists || !staffExists || !academicYearExists) {
       return NextResponse.json(
-        { error: "Invalid course or staff" },
+        { error: "Invalid course or staff or academic year" },
         { status: 400 }
       );
     }
@@ -108,12 +112,14 @@ export async function PUT(request: Request) {
         subject: data.subject,
         courseId: data.courseId, // Use the ObjectId directly
         staffId: data.staffId, // Use the ObjectId directly
+        academicYearId: data.academicYearId,
         modifiedDate: new Date(),
       },
       { new: true }
     )
       .populate("courseId")
-      .populate("staffId");
+      .populate("staffId")
+      .populate("academicYearId");
 
     if (!subject) {
       return NextResponse.json({ error: "Subject not found" }, { status: 404 });

@@ -21,8 +21,11 @@ interface Subject {
         lastName: string;
         _id: string;
     };
-    academicStartYear: string;
-    academicEndYear: string;
+    academicYearId: {
+        startDate: string;
+        endDate: string;
+        _id: string;
+    };
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -154,7 +157,7 @@ export default function ManageSubjectPage() {
                                                 <td className="text-base-content">{subject.courseId.name}</td>
                                                 <td className="text-base-content">{subject.staffId.firstName} {subject.staffId.lastName}</td>
                                                 <td className="text-base-content">
-                                                    {new Date(subject.academicStartYear).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {new Date(subject.academicEndYear).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                                    {new Date(subject.academicYearId.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {new Date(subject.academicYearId.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                                 </td>
                                                 <td className="text-base-content">{formatDate(subject.createdAt)}</td>
                                                 <td className="text-base-content">{formatDate(subject?.updatedAt) || 'N/A'}</td>
