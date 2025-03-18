@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -38,7 +38,7 @@ const formSchema = (isUpdate: boolean) => z.object({
         .nonempty("Subject name is required")
         .min(2, "Subject name must be at least 2 characters long"),
     courseId: z.string().nonempty("Course is required"),
-    staffId: z.string().nonempty("Staff is required"),
+    staffIds: z.array(z.string()).min(1, "At least one staff is required"),
     academicYearId: z.string()
         .nonempty("Academic year is required")
 });
@@ -57,6 +57,9 @@ export default function AddSubjectPage() {
     const [academicYears, setAcademicYears] = useState<{ id: string, label: string, startDate: string, endDate: string }[]>([]);
     const [showAcademicYearForm, setShowAcademicYearForm] = useState(false);
     const [newAcademicYear, setNewAcademicYear] = useState({ start: '', end: '' });
+    const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+    const [staffDropdownOpen, setStaffDropdownOpen] = useState(false);
+    const staffDropdownRef = useRef<HTMLDivElement>(null);
 
     const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
         resolver: zodResolver(formSchema(isUpdate)),
@@ -129,7 +132,7 @@ export default function AddSubjectPage() {
 
                 setCourses(coursesData);
                 setStaffs(staffsData);
-                
+
                 // Set academic years if API exists, otherwise use dummy data
                 if (academicYearsResponse.ok) {
                     // Format the academic years data to include month and year
@@ -159,11 +162,17 @@ export default function AddSubjectPage() {
 
                     // Find the matching class and section from the loaded data
                     const matchingCourse = coursesData.find((c: Course) => c._id === data.courseId._id);
-                    const matchingStaff = staffsData.find((s: Staff) => s._id === data.staffId._id);
                     const matchingAcademicYear = academicYearsData.find((y: AcademicYear) => y._id === data.academicYearId._id);
 
+                    debugger;
+                    // Handle staff as an array
+                    const staffIds = Array.isArray(data.staffIds)
+                        ? data.staffIds.map((staff: any) => staff._id)
+                        : [data.staffIds._id];
+
+                    setSelectedStaff(staffIds);
                     setValue("courseId", matchingCourse?._id || '');
-                    setValue("staffId", matchingStaff?._id || '');
+                    setValue("staffIds", staffIds);
                     setValue("academicYearId", matchingAcademicYear?._id || '');
                 }
 
@@ -178,9 +187,21 @@ export default function AddSubjectPage() {
         fetchData();
     }, [id, setValue, staffRole]); // Added staffRole to dependencies
 
+    // Handle staff selection
+    const handleStaffChange = (staffId: string) => {
+        setSelectedStaff(prev => {
+            const newSelection = prev.includes(staffId)
+                ? prev.filter(id => id !== staffId)
+                : [...prev, staffId];
+
+            setValue("staffIds", newSelection);
+            return newSelection;
+        });
+    };
+
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         const method = id ? 'PUT' : 'POST';
-        
+
         // Prepare the data with the academic year ID
         const userData = id
             ? { ...data, id }
@@ -203,6 +224,20 @@ export default function AddSubjectPage() {
             router.push('/manage-subject');
         }
     };
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (staffDropdownRef.current && !staffDropdownRef.current.contains(event.target as Node)) {
+                setStaffDropdownOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     if (isLoading) {
         return (
@@ -264,25 +299,74 @@ export default function AddSubjectPage() {
                                 )}
                             </div>
 
-                            {/* Staff Dropdown */}
-                            <div className="form-control w-full">
+                            {/* Staff Multi-Select Dropdown */}
+                            <div className="form-control w-full relative" ref={staffDropdownRef}>
                                 <label className="label">
                                     <span className="label-text text-base-content">Staff</span>
                                 </label>
-                                <select
-                                    {...register("staffId")}
-                                    className={`select select-bordered w-full bg-base-100 text-base-content ${errors.staffId ? 'select-error' : ''}`}
+                                <div
+                                    className={`select select-bordered w-full bg-base-100 text-base-content cursor-pointer ${errors.staffIds ? 'select-error' : ''}`}
+                                    onClick={() => setStaffDropdownOpen(!staffDropdownOpen)}
                                 >
-                                    <option value="">Select a staff</option>
-                                    {staffs.map((staff) => (
-                                        <option key={staff._id} value={staff._id} className="text-base-content bg-base-100">
-                                            {staff.firstName} {staff.lastName}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.staffId && (
+                                    <div className="flex items-center gap-2 p-2 min-h-[2.5rem] overflow-hidden">
+                                        {selectedStaff.length === 0 ? (
+                                            <span className="text-base-content/50">Select staff</span>
+                                        ) : (
+                                            <>
+                                                {selectedStaff.slice(0, 3).map(id => {
+                                                    const staff = staffs.find(s => s._id === id);
+                                                    return staff ? (
+                                                        <div key={id} className="badge badge-primary h-7 px-3 flex items-center gap-1 flex-shrink-0">
+                                                            {staff.firstName} {staff.lastName}
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-xs btn-ghost btn-circle"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleStaffChange(id);
+                                                                }}
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    ) : null;
+                                                })}
+                                                {selectedStaff.length > 3 && (
+                                                    <div className="badge badge-primary h-7 px-3 flex-shrink-0">
+                                                        +{selectedStaff.length - 3} more
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                {staffDropdownOpen && (
+                                    <div className="bg-base-100 mt-1 border border-base-300 rounded-md max-h-60 overflow-y-auto absolute z-50 w-full shadow-lg top-full left-0">
+                                        {staffs.map((staff) => (
+                                            <div
+                                                key={staff._id}
+                                                className="p-2 cursor-pointer hover:bg-base-300"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleStaffChange(staff._id);
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="checkbox checkbox-sm checkbox-primary"
+                                                        checked={selectedStaff.includes(staff._id)}
+                                                        onChange={() => { }}
+                                                    />
+                                                    <span className="text-base-content">{staff.firstName} {staff.lastName}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {errors.staffIds && (
                                     <label className="label">
-                                        <span className="label-text-alt text-error">{errors.staffId.message}</span>
+                                        <span className="label-text-alt text-error">{errors.staffIds.message}</span>
                                     </label>
                                 )}
                             </div>

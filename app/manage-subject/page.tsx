@@ -16,11 +16,11 @@ interface Subject {
         name: string;
         _id: string;
     };
-    staffId: {
+    staffIds: {
         firstName: string;
         lastName: string;
         _id: string;
-    };
+    }[];
     academicYearId: {
         startDate: string;
         endDate: string;
@@ -155,7 +155,13 @@ export default function ManageSubjectPage() {
                                             <tr key={subject._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{subject.subject}</td>
                                                 <td className="text-base-content">{subject.courseId.name}</td>
-                                                <td className="text-base-content">{subject.staffId.firstName} {subject.staffId.lastName}</td>
+                                                <td className="text-base-content">
+                                                    {Array.isArray(subject.staffIds) 
+                                                        ? subject.staffIds.map((staff: { firstName: string; lastName: string }) => 
+                                                            `${staff.firstName} ${staff.lastName}`).join(', ')
+                                                        : 'N/A'
+                                                    }
+                                                </td>
                                                 <td className="text-base-content">
                                                     {new Date(subject.academicYearId.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {new Date(subject.academicYearId.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                                 </td>

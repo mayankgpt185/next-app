@@ -12,12 +12,25 @@ export async function POST(request: Request) {
 
     // Verify that class and section exist
     const courseExists = await Course.findById(data.courseId);
-    const staffExists = await User.findById(data.staffId);
     const academicYearExists = await Session.findById(data.academicYearId);
 
-    if (!courseExists || !staffExists || !academicYearExists) {
+    if (!courseExists || !academicYearExists) {
       return NextResponse.json(
-        { error: "Invalid course or staff or academic year" },
+        { error: "Invalid course or academic year" },
+        { status: 400 }
+      );
+    }
+
+    // Verify all staff IDs exist
+    const staffIds = Array.isArray(data.staffIds) ? data.staffIds : [data.staffIds];
+    const staffCount = await User.countDocuments({
+      _id: { $in: staffIds }
+    });
+
+    debugger;
+    if (staffCount !== staffIds.length) {
+      return NextResponse.json(
+        { error: "One or more staff members not found" },
         { status: 400 }
       );
     }
@@ -25,8 +38,8 @@ export async function POST(request: Request) {
     const subject = await Subject.create({
       subject: data.subject,
       courseId: data.courseId,
-      staffId: data.staffId,
-      academicYear: data.academicYear,
+      staffIds: staffIds,
+      academicYearId: data.academicYearId,
     });
 
     return NextResponse.json(subject);
@@ -49,7 +62,7 @@ export async function GET(request: Request) {
       const subject = await Subject.findById(id)
         .where({ isActive: true })
         .populate("courseId")
-        .populate("staffId")
+        .populate("staffIds")
         .populate("academicYearId")
         .select("-__v");
 
@@ -65,7 +78,7 @@ export async function GET(request: Request) {
       const subjects = await Subject.find({})
         .where({ isActive: true })
         .populate("courseId")
-        .populate("staffId")
+        .populate("staffIds")
         .populate("academicYearId")
         .select("-__v");
 
@@ -94,14 +107,26 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Find class and section by their IDs
+    // Find course by ID
     const courseExists = await Course.findById(data.courseId);
-    const staffExists = await User.findById(data.staffId);
     const academicYearExists = await Session.findById(data.academicYearId);
 
-    if (!courseExists || !staffExists || !academicYearExists) {
+    if (!courseExists || !academicYearExists) {
       return NextResponse.json(
-        { error: "Invalid course or staff or academic year" },
+        { error: "Invalid course or academic year" },
+        { status: 400 }
+      );
+    }
+
+    // Verify all staff IDs exist
+    const staffIds = Array.isArray(data.staffIds) ? data.staffIds : [data.staffIds];
+    const staffCount = await User.countDocuments({
+      _id: { $in: staffIds }
+    });
+
+    if (staffCount !== staffIds.length) {
+      return NextResponse.json(
+        { error: "One or more staff members not found" },
         { status: 400 }
       );
     }
@@ -110,15 +135,15 @@ export async function PUT(request: Request) {
       id,
       {
         subject: data.subject,
-        courseId: data.courseId, // Use the ObjectId directly
-        staffId: data.staffId, // Use the ObjectId directly
+        courseId: data.courseId,
+        staffIds: staffIds,
         academicYearId: data.academicYearId,
         modifiedDate: new Date(),
       },
       { new: true }
     )
       .populate("courseId")
-      .populate("staffId")
+      .populate("staffIds")
       .populate("academicYearId");
 
     if (!subject) {
