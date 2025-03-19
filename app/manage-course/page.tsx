@@ -137,8 +137,8 @@ export default function ManageCoursePage() {
                                         <th className="text-base-content">Course Name</th>
                                         <th className="text-base-content">Class</th>
                                         <th className="text-base-content">Section</th>
-                                        <th className="text-base-content">Created Date</th>
-                                        <th className="text-base-content">Updated Date</th>
+                                        {/* <th className="text-base-content">Created Date</th>
+                                        <th className="text-base-content">Updated Date</th> */}
                                         <th className="text-base-content">Actions</th>
                                     </tr>
                                 </thead>
@@ -149,8 +149,8 @@ export default function ManageCoursePage() {
                                                 <td className="text-base-content">{course.name}</td>
                                                 <td className="text-base-content">{course.class.classNumber}</td>
                                                 <td className="text-base-content">{course.section.section}</td>
-                                                <td className="text-base-content">{formatDate(course.createdAt)}</td>
-                                                <td className="text-base-content">{formatDate(course?.updatedAt) || 'N/A'}</td>
+                                                {/* <td className="text-base-content">{formatDate(course.createdAt)}</td>
+                                                <td className="text-base-content">{formatDate(course?.updatedAt) || 'N/A'}</td> */}
                                                 <td>
                                                     <div className="flex gap-2">
                                                         <Link href={`/manage-course/add?id=${course._id}`}>

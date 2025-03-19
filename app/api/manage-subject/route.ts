@@ -22,9 +22,11 @@ export async function POST(request: Request) {
     }
 
     // Verify all staff IDs exist
-    const staffIds = Array.isArray(data.staffIds) ? data.staffIds : [data.staffIds];
+    const staffIds = Array.isArray(data.staffIds)
+      ? data.staffIds
+      : [data.staffIds];
     const staffCount = await User.countDocuments({
-      _id: { $in: staffIds }
+      _id: { $in: staffIds },
     });
 
     debugger;
@@ -58,6 +60,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const academicYear = searchParams.get("academicYear");
     if (id) {
       const subject = await Subject.findById(id)
         .where({ isActive: true })
@@ -74,6 +77,17 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json(subject);
+    } else if (academicYear) {
+      const subjects = await Subject.find({
+        academicYearId: academicYear,
+        isActive: true,
+      })
+        .populate("courseId")
+        .populate("staffIds")
+        .populate("academicYearId")
+        .select("-__v");
+
+      return NextResponse.json(subjects);
     } else {
       const subjects = await Subject.find({})
         .where({ isActive: true })
@@ -119,9 +133,11 @@ export async function PUT(request: Request) {
     }
 
     // Verify all staff IDs exist
-    const staffIds = Array.isArray(data.staffIds) ? data.staffIds : [data.staffIds];
+    const staffIds = Array.isArray(data.staffIds)
+      ? data.staffIds
+      : [data.staffIds];
     const staffCount = await User.countDocuments({
-      _id: { $in: staffIds }
+      _id: { $in: staffIds },
     });
 
     if (staffCount !== staffIds.length) {

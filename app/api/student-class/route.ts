@@ -44,6 +44,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const studentId = searchParams.get("studentId");
+    const classId = searchParams.get("classId");
+    const sectionId = searchParams.get("sectionId");
     if (id) {
       const studentClass = await StudentClass.findById(id)
         .where({ isActive: true })
@@ -61,6 +63,17 @@ export async function GET(request: Request) {
       return NextResponse.json(studentClass);
     } else if (studentId) {
       const studentClass = await StudentClass.findOne({ studentId })
+        .where({ isActive: true })
+        .populate("class")
+        .populate("section")
+        .select("-__v");
+
+      return NextResponse.json(studentClass);
+    } else if (classId && sectionId) {
+      const studentClass = await StudentClass.find({
+        class: classId,
+        section: sectionId,
+      })
         .where({ isActive: true })
         .populate("class")
         .populate("section")
@@ -136,8 +149,8 @@ export async function PUT(request: Request) {
     } else if (studentId) {
       const studentClass = await StudentClass.findOneAndUpdate(
         { studentId },
-        { 
-          class: data.classId, 
+        {
+          class: data.classId,
           section: data.sectionId,
           modifiedDate: new Date(),
         },

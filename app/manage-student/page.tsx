@@ -37,7 +37,7 @@ export default function ManageStudentPage() {
                 if (!response.ok || !studentClassResponse.ok) throw new Error('Failed to fetch student');
                 const data = await response.json();
                 const studentClassData = await studentClassResponse.json();
-                debugger;
+                
                 data.forEach((student: StudentMember) => {
                     const matchingClass = studentClassData.find((cls: any) => cls.studentId === student._id);
                     if (matchingClass) {
