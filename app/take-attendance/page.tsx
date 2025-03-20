@@ -4,10 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { StudentMemberDTO } from '../api/dto/StudentMember';
 
 export default function TakeAttendancePage() {
-    // State for storing data
-    // const [academicYears, setAcademicYears] = useState([]);
-    const [subjects, setSubjects] = useState<{ _id: string, subject: string, class: string, section: string, courseId: { class: string, section: string } }[]>([]);
-    const [staff, setStaff] = useState([]);
+    const [subjects, setSubjects] = useState<{ _id: string, subject: string, class: string, section: string, courseId: { class: string, section: string }, staffIds: StudentMemberDTO[] }[]>([]);
+    const [staff, setStaff] = useState<StudentMemberDTO[]>([]);
     const [students, setStudents] = useState<{ _id: string, name: string }[]>([]);
     const [selectedYear, setSelectedYear] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
@@ -15,9 +13,8 @@ export default function TakeAttendancePage() {
     const [attendanceDate, setAttendanceDate] = useState('');
     const [attendanceData, setAttendanceData] = useState([]);
     const [academicYears, setAcademicYears] = useState<{ id: string, label: string, startDate: string, endDate: string }[]>([]);
+    const [dateFieldTouched, setDateFieldTouched] = useState(false);
     const studentRole = "STUDENT";
-    const [classesData, setClassesData] = useState<{ _id: string, classNumber: number }[]>([]);
-    const [sectionsData, setSectionsData] = useState<{ _id: string, section: string }[]>([]);
 
     // Fetch academic years on component mount
     useEffect(() => {
@@ -26,9 +23,7 @@ export default function TakeAttendancePage() {
                 // Replace with your actual API endpoint
                 const response = await fetch('/api/session');
                 const data = await response.json();
-                // const academicYearsData = await academicYearsResponse.json();
                 if (response.ok) {
-                    // Format the academic years data to include month and year
                     const formattedYears = data.map((year: any) => {
                         const startDate = new Date(year.startDate);
                         const endDate = new Date(year.endDate);
@@ -41,10 +36,8 @@ export default function TakeAttendancePage() {
                     });
                     setAcademicYears(formattedYears);
                 } else {
-                    // Dummy data for academic years
                     setAcademicYears([]);
                 }
-                // setAcademicYears(data);
             } catch (error) {
                 console.error('Error fetching academic years:', error);
             }
@@ -96,19 +89,18 @@ export default function TakeAttendancePage() {
         fetchData();
     }, [selectedYear]);
 
-    // Fetch staff when subject is selected
     useEffect(() => {
         if (!selectedSubject) {
             setStaff([]);
             return;
         }
 
+        debugger;
         const fetchStaff = async () => {
             try {
-                // Replace with your actual API endpoint
-                const response = await fetch(`/api/manage-staff?subject=${selectedSubject}`);
-                const data = await response.json();
-                setStaff(data);
+                const staffSubjectList = subjects.find(subject => subject._id === selectedSubject);
+                debugger;
+                setStaff(staffSubjectList?.staffIds || []);
             } catch (error) {
                 console.error('Error fetching staff:', error);
             }
@@ -126,37 +118,31 @@ export default function TakeAttendancePage() {
 
         const fetchStudents = async () => {
             try {
-                // Find the selected subject details from the subjects array
                 const subjectDetails = subjects.find(subject => subject._id === selectedSubject);
 
                 if (!subjectDetails) {
                     throw new Error('Selected subject details not found');
                 }
 
-                // Fetch student classes based on selected subject's class and section
                 const studentClassesResponse = await fetch(`/api/student-class?classId=${subjectDetails.courseId.class}&sectionId=${subjectDetails.courseId.section}`);
                 if (!studentClassesResponse.ok) {
                     throw new Error('Failed to fetch student classes');
                 }
                 const studentClassesData = await studentClassesResponse.json();
 
-                // Extract student IDs from the studentClassesData
                 const studentIds = studentClassesData.map((studentClass: any) => studentClass.studentId);
 
-                // Fetch student details using the extracted student IDs
                 const studentsResponse = await fetch(`/api/manage-staff?role=${studentRole}`);
                 if (!studentsResponse.ok) {
                     throw new Error('Failed to fetch students');
                 }
                 const studentsData = await studentsResponse.json();
 
-                // Filter students based on the fetched student IDs
                 const filteredStudents = studentsData.filter((student: any) => studentIds.includes(student._id));
 
-                // Initialize attendance data with default values
                 const initialAttendance = filteredStudents.map((student: any) => ({
                     studentId: student._id,
-                    name: student.name,
+                    name: student.firstName + " " + student.lastName,
                     present: true
                 }));
 
@@ -283,8 +269,8 @@ export default function TakeAttendancePage() {
                             >
                                 <option value="">Select Staff</option>
                                 {staff.map((person: any) => (
-                                    <option key={person.id} value={person.id} className="text-base-content bg-base-100">
-                                        {person.name}
+                                    <option key={person._id} value={person._id} className="text-base-content bg-base-100">
+                                        {person.firstName} {person.lastName}
                                     </option>
                                 ))}
                             </select>
@@ -293,14 +279,26 @@ export default function TakeAttendancePage() {
                         {/* Date Selection */}
                         <div className="form-control w-full">
                             <label className="label">
-                                <span className="label-text text-base-content">Date</span>
+                                <span className="label-text text-base-content">Attendance Date</span>
                             </label>
                             <input
                                 type="date"
                                 className="input input-bordered w-full bg-base-100 text-base-content"
                                 value={attendanceDate}
-                                onChange={(e) => setAttendanceDate(e.target.value)}
+                                onChange={(e) => {
+                                    setAttendanceDate(e.target.value);
+                                    setDateFieldTouched(true);
+                                }}
+                                onFocus={() => setDateFieldTouched(true)}
+                                min={selectedYear ? academicYears.find(year => year.id === selectedYear)?.startDate.split('T')[0] : ''}
+                                max={selectedYear ? academicYears.find(year => year.id === selectedYear)?.endDate.split('T')[0] : ''}
+                                disabled={!selectedYear}
                             />
+                            {!attendanceDate && dateFieldTouched && selectedYear && (
+                                <label className="label">
+                                    <span className="label-text-alt text-warning">Please select a date within the academic year</span>
+                                </label>
+                            )}
                         </div>
                     </div>
 
