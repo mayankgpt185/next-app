@@ -85,8 +85,8 @@ const Sidebar = () => {
             </div>
             <div className="tooltip tooltip-right" data-tip="Take Attendance">
               <button
-                className={`btn btn-ghost btn-circle ${currentPath === '/take-attendance' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/take-attendance')}
+                className={`btn btn-ghost btn-circle ${currentPath === '/attendance/add' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/attendance/add')}
             >
                 <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
               </button>
@@ -185,7 +185,7 @@ const Sidebar = () => {
                   <span>Manage Subject</span>
                 </a>
               </li>
-              <li className={currentPath === '/take-attendance' ? 'active' : ''} onClick={() => handleNavigation('/take-attendance')}>
+              <li className={currentPath === '/attendance/add' ? 'active' : ''} onClick={() => handleNavigation('/attendance/add')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
                   <span>Take Attendance</span>

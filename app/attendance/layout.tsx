@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from '../components/sidebar/sidebar';
 
-export default function TakeAttendanceLayout({
+export default function AttendanceLayout({
     children,
 }: {
     children: React.ReactNode;

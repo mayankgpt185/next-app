@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { StudentMemberDTO } from '../api/dto/StudentMember';
+import { StudentMemberDTO } from '../../api/dto/StudentMember';
+import toast from 'react-hot-toast';
 
-export default function TakeAttendancePage() {
+export default function AttendanceAddPage() {
     const [subjects, setSubjects] = useState<{ _id: string, subject: string, class: string, section: string, courseId: { class: string, section: string }, staffIds: StudentMemberDTO[] }[]>([]);
     const [staff, setStaff] = useState<StudentMemberDTO[]>([]);
     const [students, setStudents] = useState<{ _id: string, name: string }[]>([]);
@@ -18,11 +19,13 @@ export default function TakeAttendancePage() {
     const [isLoadingStaff, setIsLoadingStaff] = useState(false);
     const [isLoadingStudents, setIsLoadingStudents] = useState(false);
     const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
+    const [isLoadingYears, setIsLoadingYears] = useState(false);
 
     // Fetch academic years on component mount
     useEffect(() => {
         const fetchAcademicYears = async () => {
             try {
+                setIsLoadingYears(true);
                 // Replace with your actual API endpoint
                 const response = await fetch('/api/session');
                 const data = await response.json();
@@ -43,6 +46,8 @@ export default function TakeAttendancePage() {
                 }
             } catch (error) {
                 console.error('Error fetching academic years:', error);
+            } finally {
+                setIsLoadingYears(false);
             }
         };
 
@@ -98,25 +103,33 @@ export default function TakeAttendancePage() {
     useEffect(() => {
         if (!selectedSubject) {
             setStaff([]);
+            setSelectedStaff('');
             return;
         }
 
-        debugger;
         const fetchStaff = async () => {
             try {
                 setIsLoadingStaff(true);
                 const staffSubjectList = subjects.find(subject => subject._id === selectedSubject);
-                debugger;
-                setStaff(staffSubjectList?.staffIds || []);
+                const staffMembers = staffSubjectList?.staffIds || [];
+                setStaff(staffMembers);
+                
+                if (staffMembers.length === 1) {
+                    // setSelectedStaff(staffMembers[0]._id);
+                } else {
+                    setSelectedStaff('');
+                }
             } catch (error) {
                 console.error('Error fetching staff:', error);
+                setStaff([]);
+                setSelectedStaff('');
             } finally {
                 setIsLoadingStaff(false);
             }
         };
 
         fetchStaff();
-    }, [selectedSubject]);
+    }, [selectedSubject, subjects]);
 
     // Fetch students when subject is selected (not dependent on staff)
     useEffect(() => {
@@ -182,36 +195,58 @@ export default function TakeAttendancePage() {
 
     // Submit attendance
     const submitAttendance = async () => {
+        // Log the current state for debugging
+        console.log("Current staff state:", selectedStaff);
+        
         if (!attendanceDate) {
-            alert('Please select a date for attendance');
+            toast.error('Please select a date for attendance');
+            return;
+        }
+
+        // More robust check for staff selection
+        if (!selectedStaff || selectedStaff === '') {
+            toast.error('Please select a staff member');
             return;
         }
 
         try {
+            // Format student attendance data according to the schema
+            const formattedStudentAttendance = attendanceData.map((student: any) => ({
+                studentId: student.studentId,
+                status: student.present ? "P" : "A"
+            }));
+            
+            // Create the payload with the correct format
+            const payload = {
+                academicYearId: selectedYear,
+                subjectId: selectedSubject,
+                staffId: selectedStaff,
+                attendanceDate: attendanceDate,
+                studentAttendance: formattedStudentAttendance
+            };
+            
+            console.log("Submitting payload:", payload); // Debug log
+            
             // Replace with your actual API endpoint
             const response = await fetch('/api/attendance', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    academicYear: selectedYear,
-                    subject: selectedSubject,
-                    staff: selectedStaff,
-                    date: attendanceDate,
-                    attendance: attendanceData
-                }),
+                body: JSON.stringify(payload),
             });
-
+            
             if (response.ok) {
-                alert('Attendance submitted successfully');
+                toast.success('Attendance submitted successfully');
                 // Reset form or redirect as needed
             } else {
-                alert('Failed to submit attendance');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Server error:', errorData);
+                toast.error('Failed to submit attendance: ' + (errorData.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error submitting attendance:', error);
-            alert('Error submitting attendance');
+            toast.error('Error submitting attendance');
         }
     };
 
@@ -245,8 +280,6 @@ export default function TakeAttendancePage() {
         setSelectedStaff(newStaff);
         // Only reset the date, but keep the student data
         setAttendanceDate('');
-        // Don't reset student data when staff changes
-        // setAttendanceData([]);
     };
 
     return (
@@ -261,11 +294,12 @@ export default function TakeAttendancePage() {
                             <label className="label">
                                 <span className="label-text text-base-content">Academic Year</span>
                             </label>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 relative">
                                 <select
                                     className="select select-bordered flex-1 bg-base-100 text-base-content"
                                     value={selectedYear}
                                     onChange={handleYearChange}
+                                    disabled={isLoadingYears}
                                 >
                                     <option value="">Select academic year</option>
                                     {academicYears.map((year) => (
@@ -278,6 +312,11 @@ export default function TakeAttendancePage() {
                                         </option>
                                     ))}
                                 </select>
+                                {isLoadingYears && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <span className="loading loading-spinner loading-sm text-primary"></span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
