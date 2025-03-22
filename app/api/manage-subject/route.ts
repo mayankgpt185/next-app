@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import User from "@/app/api/models/user";
 import { Course } from "../models/course";
 import Session from "../models/session";
+import { Section } from "../models/section";
 
 export async function POST(request: Request) {
   try {
@@ -29,10 +30,23 @@ export async function POST(request: Request) {
       _id: { $in: staffIds },
     });
 
-    debugger;
     if (staffCount !== staffIds.length) {
       return NextResponse.json(
         { error: "One or more staff members not found" },
+        { status: 400 }
+      );
+    }
+
+    const sectionIds = Array.isArray(data.sectionIds)
+      ? data.sectionIds
+      : [data.sectionIds];
+    const sectionCount = await Section.countDocuments({
+      _id: { $in: sectionIds },
+    });
+
+    if (sectionCount !== sectionIds.length) {
+      return NextResponse.json(
+        { error: "One or more sections not found" },
         { status: 400 }
       );
     }
@@ -42,6 +56,7 @@ export async function POST(request: Request) {
       courseId: data.courseId,
       staffIds: staffIds,
       academicYearId: data.academicYearId,
+      sectionIds: sectionIds,
     });
 
     return NextResponse.json(subject);
@@ -67,6 +82,7 @@ export async function GET(request: Request) {
         .populate("courseId")
         .populate("staffIds")
         .populate("academicYearId")
+        .populate("sectionIds")
         .select("-__v");
 
       if (!subject) {
@@ -85,6 +101,7 @@ export async function GET(request: Request) {
         .populate("courseId")
         .populate("staffIds")
         .populate("academicYearId")
+        .populate("sectionIds")
         .select("-__v");
 
       return NextResponse.json(subjects);
@@ -94,6 +111,7 @@ export async function GET(request: Request) {
         .populate("courseId")
         .populate("staffIds")
         .populate("academicYearId")
+        .populate("sectionIds")
         .select("-__v");
 
       return NextResponse.json(subjects);
@@ -147,6 +165,22 @@ export async function PUT(request: Request) {
       );
     }
 
+    const sectionIds = Array.isArray(data.sectionIds)
+      ? data.sectionIds.map(
+          (section: { sectionId: string }) => section.sectionId
+        )
+      : [data.sectionIds.sectionId];
+    const sectionCount = await Section.countDocuments({
+      _id: { $in: sectionIds },
+    });
+
+    if (sectionCount !== sectionIds.length) {
+      return NextResponse.json(
+        { error: "One or more sections not found" },
+        { status: 400 }
+      );
+    }
+
     const subject = await Subject.findByIdAndUpdate(
       id,
       {
@@ -154,13 +188,15 @@ export async function PUT(request: Request) {
         courseId: data.courseId,
         staffIds: staffIds,
         academicYearId: data.academicYearId,
+        sectionIds: sectionIds,
         modifiedDate: new Date(),
       },
       { new: true }
     )
       .populate("courseId")
       .populate("staffIds")
-      .populate("academicYearId");
+      .populate("academicYearId")
+      .populate("sectionIds");
 
     if (!subject) {
       return NextResponse.json({ error: "Subject not found" }, { status: 404 });

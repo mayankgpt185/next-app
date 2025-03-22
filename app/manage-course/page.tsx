@@ -16,10 +16,6 @@ interface Course {
         classNumber: number;
         _id: string;
     };
-    section: {
-        section: string;
-        _id: string;
-    };
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -56,9 +52,6 @@ export default function ManageCoursePage() {
         
         // Search in class number
         if (course.class && course.class.classNumber.toString().toLowerCase().includes(searchTerm.toLowerCase())) return true;
-        
-        // Search in section
-        if (course.section && course.section.section.toLowerCase().includes(searchTerm.toLowerCase())) return true;
         
         return false;
     });
@@ -136,9 +129,6 @@ export default function ManageCoursePage() {
                                     <tr>
                                         <th className="text-base-content">Course Name</th>
                                         <th className="text-base-content">Class</th>
-                                        <th className="text-base-content">Section</th>
-                                        {/* <th className="text-base-content">Created Date</th>
-                                        <th className="text-base-content">Updated Date</th> */}
                                         <th className="text-base-content">Actions</th>
                                     </tr>
                                 </thead>
@@ -148,9 +138,6 @@ export default function ManageCoursePage() {
                                             <tr key={course._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{course.name}</td>
                                                 <td className="text-base-content">{course.class.classNumber}</td>
-                                                <td className="text-base-content">{course.section.section}</td>
-                                                {/* <td className="text-base-content">{formatDate(course.createdAt)}</td>
-                                                <td className="text-base-content">{formatDate(course?.updatedAt) || 'N/A'}</td> */}
                                                 <td>
                                                     <div className="flex gap-2">
                                                         <Link href={`/manage-course/add?id=${course._id}`}>

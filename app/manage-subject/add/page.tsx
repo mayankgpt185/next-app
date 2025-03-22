@@ -26,6 +26,11 @@ interface Staff {
     lastName: string;
 }
 
+interface Section {
+    _id: string;
+    section: string;
+}
+
 interface AcademicYear {
     _id: string;
     label: string;
@@ -38,6 +43,7 @@ const formSchema = (isUpdate: boolean) => z.object({
         .nonempty("Subject name is required")
         .min(2, "Subject name must be at least 2 characters long"),
     courseId: z.string().nonempty("Course is required"),
+    sectionIds: z.array(z.string()).min(1, "At least one section is required"),
     staffIds: z.array(z.string()).min(1, "At least one staff is required"),
     academicYearId: z.string()
         .nonempty("Academic year is required")
@@ -52,14 +58,19 @@ export default function AddSubjectPage() {
     const isUpdate = !!id; // If `id` exists, it's an update, otherwise it's a new user
     const [courses, setCourses] = useState<Course[]>([]);
     const [staffs, setStaffs] = useState<Staff[]>([]);
+    const [sections, setSections] = useState<Section[]>([]);
+    const [filteredSections, setFilteredSections] = useState<Section[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const staffRole = "STAFF";
     const [academicYears, setAcademicYears] = useState<{ id: string, label: string, startDate: string, endDate: string }[]>([]);
     const [showAcademicYearForm, setShowAcademicYearForm] = useState(false);
     const [newAcademicYear, setNewAcademicYear] = useState({ start: '', end: '' });
     const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+    const [selectedSections, setSelectedSections] = useState<string[]>([]);
     const [staffDropdownOpen, setStaffDropdownOpen] = useState(false);
+    const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false);
     const staffDropdownRef = useRef<HTMLDivElement>(null);
+    const sectionDropdownRef = useRef<HTMLDivElement>(null);
 
     const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
         resolver: zodResolver(formSchema(isUpdate)),
@@ -116,22 +127,26 @@ export default function AddSubjectPage() {
         // Fetch classes, sections, and academic years
         const fetchData = async () => {
             try {
-                const [coursesResponse, staffsResponse, academicYearsResponse] = await Promise.all([
+                const [coursesResponse, staffsResponse, sectionsResponse, academicYearsResponse] = await Promise.all([
                     fetch('/api/manage-course'),
                     fetch(`/api/manage-staff?role=${staffRole}`),
-                    fetch('/api/session') // Add this API endpoint to fetch academic years
+                    fetch('/api/sections'),
+                    fetch('/api/session')
                 ]);
 
-                if (!coursesResponse.ok || !staffsResponse.ok) {
+                if (!coursesResponse.ok || !staffsResponse.ok || !sectionsResponse.ok) {
                     throw new Error('Failed to fetch data');
                 }
 
                 const coursesData = await coursesResponse.json();
                 const staffsData = await staffsResponse.json();
+                const sectionsData = await sectionsResponse.json();
                 const academicYearsData = await academicYearsResponse.json();
 
                 setCourses(coursesData);
                 setStaffs(staffsData);
+                setSections(sectionsData);
+                setFilteredSections(sectionsData);
 
                 // Set academic years if API exists, otherwise use dummy data
                 if (academicYearsResponse.ok) {
@@ -164,16 +179,23 @@ export default function AddSubjectPage() {
                     const matchingCourse = coursesData.find((c: Course) => c._id === data.courseId._id);
                     const matchingAcademicYear = academicYearsData.find((y: AcademicYear) => y._id === data.academicYearId._id);
 
-                    debugger;
                     // Handle staff as an array
                     const staffIds = Array.isArray(data.staffIds)
                         ? data.staffIds.map((staff: any) => staff._id)
                         : [data.staffIds._id];
 
+                    // Handle sections as an array
+                    const sectionIds = Array.isArray(data.sectionIds)
+                        ? data.sectionIds.map((section: any) => section._id)
+                        : [data.sectionIds._id];
+
                     setSelectedStaff(staffIds);
+                    setSelectedSections(sectionIds);
                     setValue("courseId", matchingCourse?._id || '');
                     setValue("staffIds", staffIds);
+                    setValue("sectionIds", sectionIds);
                     setValue("academicYearId", matchingAcademicYear?._id || '');
+
                 }
 
                 setIsLoading(false);
@@ -185,7 +207,16 @@ export default function AddSubjectPage() {
         };
 
         fetchData();
-    }, [id, setValue, staffRole]); // Added staffRole to dependencies
+    }, [id, setValue, staffRole]);
+
+    // Handle course change to filter sections
+    const handleCourseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const courseId = e.target.value;
+        setValue("courseId", courseId);
+        
+        // No longer clearing selected sections when course changes
+        // This allows sections to be selected independently of course
+    };
 
     // Handle staff selection
     const handleStaffChange = (staffId: string) => {
@@ -199,6 +230,18 @@ export default function AddSubjectPage() {
         });
     };
 
+    // Handle section selection
+    const handleSectionChange = (sectionId: string) => {
+        setSelectedSections(prev => {
+            const newSelection = prev.includes(sectionId)
+                ? prev.filter(id => id !== sectionId)
+                : [...prev, sectionId];
+
+            setValue("sectionIds", newSelection);
+            return newSelection;
+        });
+    };
+
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         const method = id ? 'PUT' : 'POST';
 
@@ -207,6 +250,7 @@ export default function AddSubjectPage() {
             ? { ...data, id }
             : { ...data };
 
+        debugger;
         const response = await fetch(`/api/manage-subject${id ? `?id=${id}` : ''}`, {
             method: method,
             headers: {
@@ -225,11 +269,14 @@ export default function AddSubjectPage() {
         }
     };
 
-    // Close dropdown when clicking outside
+    // Close dropdowns when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (staffDropdownRef.current && !staffDropdownRef.current.contains(event.target as Node)) {
                 setStaffDropdownOpen(false);
+            }
+            if (sectionDropdownRef.current && !sectionDropdownRef.current.contains(event.target as Node)) {
+                setSectionDropdownOpen(false);
             }
         }
 
@@ -284,6 +331,7 @@ export default function AddSubjectPage() {
                                 <select
                                     {...register("courseId")}
                                     className={`select select-bordered w-full bg-base-100 text-base-content ${errors.courseId ? 'select-error' : ''}`}
+                                    onChange={handleCourseChange}
                                 >
                                     <option value="">Select a course</option>
                                     {courses.map((courseItem) => (
@@ -295,6 +343,84 @@ export default function AddSubjectPage() {
                                 {errors.courseId && (
                                     <label className="label">
                                         <span className="label-text-alt text-error">{errors.courseId.message}</span>
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* Section Multi-Select Dropdown */}
+                            <div className="form-control w-full relative" ref={sectionDropdownRef}>
+                                <label className="label">
+                                    <span className="label-text text-base-content">Sections</span>
+                                </label>
+                                <div
+                                    className={`select select-bordered w-full bg-base-100 text-base-content cursor-pointer ${errors.sectionIds ? 'select-error' : ''}`}
+                                    onClick={() => setSectionDropdownOpen(!sectionDropdownOpen)}
+                                >
+                                    <div className="flex items-center gap-2 p-2 min-h-[2.5rem] overflow-hidden">
+                                        {selectedSections.length === 0 ? (
+                                            <span className="text-base-content/50">Select sections</span>
+                                        ) : (
+                                            <>
+                                                {selectedSections.slice(0, 3).map(id => {
+                                                    const section = filteredSections.find(s => s._id === id);
+                                                    return section ? (
+                                                        <div key={id} className="badge badge-primary h-7 px-3 flex items-center gap-1 flex-shrink-0">
+                                                            {section.section}
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-xs btn-ghost btn-circle"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleSectionChange(id);
+                                                                }}
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    ) : null;
+                                                })}
+                                                {selectedSections.length > 3 && (
+                                                    <div className="badge badge-primary h-7 px-3 flex-shrink-0">
+                                                        +{selectedSections.length - 3} more
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                {sectionDropdownOpen && (
+                                    <div className="bg-base-100 mt-1 border border-base-300 rounded-md max-h-60 overflow-y-auto absolute z-50 w-full shadow-lg top-full left-0">
+                                        {filteredSections.length > 0 ? (
+                                            filteredSections.map((section) => (
+                                                <div
+                                                    key={section._id}
+                                                    className="p-2 cursor-pointer hover:bg-base-300"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleSectionChange(section._id);
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="checkbox checkbox-sm checkbox-primary"
+                                                            checked={selectedSections.includes(section._id)}
+                                                            onChange={() => { }}
+                                                        />
+                                                        <span className="text-base-content">{section.section}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="p-2 text-base-content/50">
+                                                {!filteredSections.length && "Please select a course first"}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {errors.sectionIds && (
+                                    <label className="label">
+                                        <span className="label-text-alt text-error">{errors.sectionIds.message}</span>
                                     </label>
                                 )}
                             </div>

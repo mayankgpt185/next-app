@@ -3,20 +3,18 @@ import Course from "../models/course";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Class } from "../models/class";
-import Section from "../models/section";
 
 export async function POST(request: Request) {
   try {
     await dbConnect();
     const data = await request.json();
 
-    // Verify that class and section exist
+    // Verify that class exist
     const classExists = await Class.findById(data.classId);
-    const sectionExists = await Section.findById(data.sectionId);
 
-    if (!classExists || !sectionExists) {
+    if (!classExists) {
       return NextResponse.json(
-        { error: "Invalid class or section" },
+        { error: "Invalid class" },
         { status: 400 }
       );
     }
@@ -24,7 +22,6 @@ export async function POST(request: Request) {
     const course = await Course.create({
       name: data.name,
       class: data.classId,
-      section: data.sectionId,
     });
 
     return NextResponse.json(course);
@@ -47,7 +44,6 @@ export async function GET(request: Request) {
       const course = await Course.findById(id)
         .where({ isActive: true })
         .populate("class")
-        .populate("section")
         .select("-__v");
 
       if (!course) {
@@ -62,7 +58,6 @@ export async function GET(request: Request) {
       const courses = await Course.find({})
         .where({ isActive: true })
         .populate("class")
-        .populate("section")
         .select("-__v");
 
       return NextResponse.json(courses);
@@ -90,13 +85,12 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Find class and section by their IDs
+    // Find class by its ID
     const classExists = await Class.findById(data.classId);
-    const sectionExists = await Section.findById(data.sectionId);
 
-    if (!classExists || !sectionExists) {
+    if (!classExists) {
       return NextResponse.json(
-        { error: "Invalid class or section" },
+        { error: "Invalid class" },
         { status: 400 }
       );
     }
@@ -106,13 +100,11 @@ export async function PUT(request: Request) {
       {
         name: data.name,
         class: data.classId, // Use the ObjectId directly
-        section: data.sectionId, // Use the ObjectId directly
         modifiedDate: new Date(),
       },
       { new: true }
     )
-      .populate("class")
-      .populate("section");
+      .populate("class");
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
@@ -139,7 +131,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(course, { status: 201 });
     } else {
       return NextResponse.json(
-        { message: "course not found to delete" },
+        { message: "Course not found to delete" },
         { status: 404 }
       );
     }

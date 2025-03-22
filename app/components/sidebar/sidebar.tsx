@@ -93,8 +93,8 @@ const Sidebar = () => {
             </div>
             <div className="tooltip tooltip-right" data-tip="View Attendance">
               <button
-                className={`btn btn-ghost btn-circle ${currentPath === '/view-attendance' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/view-attendance')}
+                className={`btn btn-ghost btn-circle ${currentPath === '/attendance' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/attendance')}
               >
                 <lucideReact.FileChartLine className="w-5 h-5 text-info" />
               </button>
@@ -191,7 +191,7 @@ const Sidebar = () => {
                   <span>Take Attendance</span>
                 </a>
               </li>
-              <li className={currentPath === '/view-attendance' ? 'active' : ''} onClick={() => handleNavigation('/view-attendance')}>
+              <li className={currentPath === '/attendance' ? 'active' : ''} onClick={() => handleNavigation('/attendance')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.FileChartLine className="w-5 h-5 text-info" />
                   <span>View Attendance</span>

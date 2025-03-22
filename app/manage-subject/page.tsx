@@ -12,10 +12,16 @@ import toast from 'react-hot-toast';
 interface Subject {
     _id: string;
     subject: string;
+    classNumber: string;
     courseId: {
+        class: string;
         name: string;
         _id: string;
     };
+    sectionIds: {
+        section: string;
+        _id: string;
+    }[];
     staffIds: {
         firstName: string;
         lastName: string;
@@ -34,37 +40,61 @@ interface Subject {
 export default function ManageSubjectPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [subjects, setSubjects] = useState<Subject[]>([]);
+    const [classes, setClasses] = useState<any[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchSubjects = async () => {
+        const fetchData = async () => {
             try {
-                const response = await fetch(`/api/manage-subject`);
-                if (!response.ok) throw new Error('Failed to fetch subject');
-                const data = await response.json();
-                setSubjects(data);
+                setIsLoading(true);
+                // Fetch subjects
+                const subjectsResponse = await fetch(`/api/manage-subject`);
+                if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
+                const subjectsData = await subjectsResponse.json();
+
+                // Fetch classes
+                const classesResponse = await fetch(`/api/classes`);
+                if (!classesResponse.ok) throw new Error('Failed to fetch classes');
+                const classesData = await classesResponse.json();
+
+                setSubjects(subjectsData);
+                setClasses(classesData);
             } catch (error) {
-                console.error('Error fetching subject:', error);
-                toast.error('Failed to fetch subjects');
+                console.error('Error fetching data:', error);
+                toast.error('Failed to fetch data');
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchSubjects();
+
+        fetchData();
     }, []);
 
+    // Get class name by ID
+    const getClassName = (classId: string) => {
+        const foundClass = classes.find(c => c._id === classId);
+        return foundClass ? foundClass.classNumber : 'N/A';
+    };
 
     const filteredSubjects = subjects.filter(subject => {
         // Search in subject name
         if (subject.subject.toLowerCase().includes(searchTerm.toLowerCase())) return true;
 
-        // Search in class number
-        // if (course.class && course.class.classNumber.toString().toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        // Search in class number - using the class name from courseId
+        if (subject.courseId && subject.courseId.class && 
+            subject.courseId.class.toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        
+        // Also search in the class number if available
+        if (subject.classNumber && 
+            subject.classNumber.toLowerCase().includes(searchTerm.toLowerCase())) return true;
 
         // Search in section
-        if (subject.courseId && subject.courseId.name.toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        if (subject.sectionIds && Array.isArray(subject.sectionIds) &&
+            subject.sectionIds.some(section =>
+                section.section.toLowerCase().includes(searchTerm.toLowerCase())
+            )) return true;
 
         return false;
     });
@@ -141,7 +171,7 @@ export default function ManageSubjectPage() {
                                 <thead className="sticky top-0 bg-base-300">
                                     <tr>
                                         <th className="text-base-content">Subject Name</th>
-                                        <th className="text-base-content">Course</th>
+                                        <th className="text-base-content">Class & Section</th>
                                         <th className="text-base-content">Staff</th>
                                         <th className="text-base-content">Academic Year</th>
                                         <th className="text-base-content">Created Date</th>
@@ -154,10 +184,15 @@ export default function ManageSubjectPage() {
                                         filteredSubjects.map((subject) => (
                                             <tr key={subject._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{subject.subject}</td>
-                                                <td className="text-base-content">{subject.courseId.name}</td>
                                                 <td className="text-base-content">
-                                                    {Array.isArray(subject.staffIds) 
-                                                        ? subject.staffIds.map((staff: { firstName: string; lastName: string }) => 
+                                                    {getClassName(subject.courseId && subject.courseId.class ? subject.courseId.class : subject.classNumber)} - {Array.isArray(subject.sectionIds)
+                                                        ? subject.sectionIds.map(section => section.section).join(', ')
+                                                        : 'N/A'
+                                                    }
+                                                </td>
+                                                <td className="text-base-content">
+                                                    {Array.isArray(subject.staffIds)
+                                                        ? subject.staffIds.map((staff: { firstName: string; lastName: string }) =>
                                                             `${staff.firstName} ${staff.lastName}`).join(', ')
                                                         : 'N/A'
                                                     }

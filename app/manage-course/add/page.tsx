@@ -10,23 +10,17 @@ import toast from 'react-hot-toast';
 import { set } from 'lodash';
 import { Loader2 } from 'lucide-react';
 
-// Define types for class and section
+// Define types for class
 interface Class {
     _id: string;
     classNumber: number;
-}
-
-interface Section {
-    _id: string;
-    section: string;
 }
 
 const formSchema = (isUpdate: boolean) => z.object({
     name: z.string()
         .nonempty("Course name is required")
         .min(2, "Course name must be at least 2 characters long"),
-    classId: z.string().nonempty("Class is required"),
-    sectionId: z.string().nonempty("Section is required"),
+    classId: z.string().nonempty("Class is required")
 });
 
 type FormData = z.infer<ReturnType<typeof formSchema>>;
@@ -37,7 +31,6 @@ export default function AddCoursePage() {
     const id = searchParams.get('id');
     const isUpdate = !!id; // If `id` exists, it's an update, otherwise it's a new user
     const [classes, setClasses] = useState<Class[]>([]);
-    const [sections, setSections] = useState<Section[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
@@ -45,39 +38,36 @@ export default function AddCoursePage() {
     });
 
     useEffect(() => {
-        // Fetch classes and sections first
+        // Fetch classes first
         const fetchData = async () => {
             try {
-                const [classesResponse, sectionsResponse] = await Promise.all([
-                    fetch('/api/classes'),
-                    fetch('/api/sections')
+                const [classesResponse] = await Promise.all([
+                    fetch('/api/classes')
                 ]);
 
-                if (!classesResponse.ok || !sectionsResponse.ok) {
+                if (!classesResponse.ok) {
                     throw new Error('Failed to fetch data');
                 }
 
                 const classesData = await classesResponse.json();
-                const sectionsData = await sectionsResponse.json();
 
                 setClasses(classesData);
-                setSections(sectionsData);
                 
-                // After classes and sections are loaded, fetch course data if editing
+                // After classes are loaded, fetch course data if editing
                 if (id) {
-                    fetchCourseData(classesData, sectionsData);
+                    fetchCourseData(classesData);
                 }
                 
                 setIsLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
-                toast.error('Failed to load classes and sections');
+                toast.error('Failed to load classes');
                 setIsLoading(false);
             }
         };
 
         // Function to fetch course data for editing
-        const fetchCourseData = async (classesData: Class[], sectionsData: Section[]) => {
+        const fetchCourseData = async (classesData: Class[]) => {
             try {
                 const response = await fetch(`/api/manage-course?id=${id}`);
                 if (!response.ok) throw new Error('Failed to fetch course data');
@@ -85,19 +75,17 @@ export default function AddCoursePage() {
 
                 setValue("name", data.name || '');
                 
-                // Find the matching class and section from the loaded data
+                // Find the matching class from the loaded data
                 const matchingClass = classesData.find(c => c.classNumber === data.class.classNumber);
-                const matchingSection = sectionsData.find(s => s.section === data.section.section);
                 
                 setValue("classId", matchingClass?._id || '');
-                setValue("sectionId", matchingSection?._id || '');
             } catch (error) {
                 toast.error('Error fetching course data');
             }
         };
 
         fetchData();
-    }, [id, setValue]); // Remove classes and sections from dependencies
+    }, [id, setValue]); // Remove classes from dependencies
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         const method = id ? 'PUT' : 'POST';
@@ -178,29 +166,6 @@ export default function AddCoursePage() {
                                 {errors.classId && (
                                     <label className="label">
                                         <span className="label-text-alt text-error">{errors.classId.message}</span>
-                                    </label>
-                                )}
-                            </div>
-
-                            {/* Section Dropdown */}
-                            <div className="form-control w-full">
-                                <label className="label">
-                                    <span className="label-text text-base-content">Section</span>
-                                </label>
-                                <select 
-                                    {...register("sectionId")} 
-                                    className={`select select-bordered w-full bg-base-100 text-base-content ${errors.sectionId ? 'select-error' : ''}`}
-                                >
-                                    <option value="">Select a section</option>
-                                    {sections.map((section) => (
-                                        <option key={section._id} value={section._id} className="text-base-content bg-base-100">
-                                            {section.section}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.sectionId && (
-                                    <label className="label">
-                                        <span className="label-text-alt text-error">{errors.sectionId.message}</span>
                                     </label>
                                 )}
                             </div>
