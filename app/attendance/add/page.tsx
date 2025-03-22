@@ -5,7 +5,17 @@ import { StudentMemberDTO } from '../../api/dto/StudentMember';
 import toast from 'react-hot-toast';
 
 export default function AttendanceAddPage() {
-    const [subjects, setSubjects] = useState<{ _id: string, subject: string, class: string, section: string, courseId: { class: string, section: string }, staffIds: StudentMemberDTO[] }[]>([]);
+    const [subjects, setSubjects] = useState<{
+        _id: string,
+        subject: string,
+        class: string,
+        section: string,
+        sectionIds: { section: string, _id: string }[],
+        courseId: { class: string, section: string },
+        staffIds: StudentMemberDTO[],
+        displayName: string,
+        uniqueId: string
+    }[]>([]);
     const [staff, setStaff] = useState<StudentMemberDTO[]>([]);
     const [students, setStudents] = useState<{ _id: string, name: string }[]>([]);
     const [selectedYear, setSelectedYear] = useState('');
@@ -20,6 +30,8 @@ export default function AttendanceAddPage() {
     const [isLoadingStudents, setIsLoadingStudents] = useState(false);
     const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
     const [isLoadingYears, setIsLoadingYears] = useState(false);
+    const [selectedClassId, setSelectedClassId] = useState('');
+    const [selectedSectionId, setSelectedSectionId] = useState('');
 
     // Fetch academic years on component mount
     useEffect(() => {
@@ -75,17 +87,26 @@ export default function AttendanceAddPage() {
 
                 const subjectsData = await subjectsResponse.json();
                 const classesData = await classesResponse.json();
-                const sectionsData = await sectionsResponse.json();
 
-                const processedSubjects = subjectsData.map((subject: any) => {
-                    const courseData = classesData.find((cls: any) => cls._id === subject.courseId.class);
-                    const sectionData = sectionsData.find((sec: any) => sec._id === subject.courseId.section);
-
-                    return {
-                        ...subject,
-                        class: courseData ? courseData.classNumber : '',
-                        section: sectionData ? sectionData.section : ''
-                    };
+                let processedSubjects = subjectsData.flatMap((subject: any) => {
+                    // Find the class details from classesData using courseId.class
+                    const classDetails = classesData.find((cls: any) => cls._id === subject.courseId.class);
+                    const className = classDetails?.name || classDetails?.classNumber || '';
+                    
+                    // Create separate entries for each section
+                    return subject.sectionIds
+                        .filter((section: any) => section.isActive)
+                        .map((section: any) => ({
+                            _id: subject._id,
+                            subject: subject.subject,
+                            courseId: subject.courseId,
+                            sectionIds: subject.sectionIds,
+                            class: className,
+                            section: section.section,
+                            staffIds: subject.staffIds,
+                            displayName: `${subject.subject} ${className} ${section.section}`,
+                            uniqueId: `${subject._id}-${section._id}`
+                        }));
                 });
 
                 setSubjects(processedSubjects);
@@ -110,15 +131,9 @@ export default function AttendanceAddPage() {
         const fetchStaff = async () => {
             try {
                 setIsLoadingStaff(true);
-                const staffSubjectList = subjects.find(subject => subject._id === selectedSubject);
+                const staffSubjectList = subjects.find(subject => subject.uniqueId === selectedSubject);
                 const staffMembers = staffSubjectList?.staffIds || [];
                 setStaff(staffMembers);
-                
-                if (staffMembers.length === 1) {
-                    // setSelectedStaff(staffMembers[0]._id);
-                } else {
-                    setSelectedStaff('');
-                }
             } catch (error) {
                 console.error('Error fetching staff:', error);
                 setStaff([]);
@@ -141,13 +156,17 @@ export default function AttendanceAddPage() {
         const fetchStudents = async () => {
             try {
                 setIsLoadingStudents(true);
-                const subjectDetails = subjects.find(subject => subject._id === selectedSubject);
+                const subjectDetails = subjects.find(subject => subject.uniqueId === selectedSubject);
 
                 if (!subjectDetails) {
                     throw new Error('Selected subject details not found');
                 }
 
-                const studentClassesResponse = await fetch(`/api/student-class?classId=${subjectDetails.courseId.class}&sectionId=${subjectDetails.courseId.section}`);
+                // Get the section ID from the subject details
+                // We need to use the section property from the subject, which matches the section in sectionIds
+                const sectionId = subjectDetails.sectionIds?.find(s => s.section === subjectDetails.section)?._id || '';
+
+                const studentClassesResponse = await fetch(`/api/student-class?classId=${subjectDetails.courseId.class}&sectionId=${sectionId}`);
                 if (!studentClassesResponse.ok) {
                     throw new Error('Failed to fetch student classes');
                 }
@@ -180,7 +199,7 @@ export default function AttendanceAddPage() {
         };
 
         fetchStudents();
-    }, [selectedSubject, subjects, studentRole]); // Only depend on subject, not staff
+    }, [selectedSubject, subjects, studentRole]);
 
     // Handle attendance toggle
     const handleAttendanceChange = (studentId: string) => {
@@ -197,7 +216,7 @@ export default function AttendanceAddPage() {
     const submitAttendance = async () => {
         // Log the current state for debugging
         console.log("Current staff state:", selectedStaff);
-        
+
         if (!attendanceDate) {
             toast.error('Please select a date for attendance');
             return;
@@ -215,18 +234,20 @@ export default function AttendanceAddPage() {
                 studentId: student.studentId,
                 status: student.present ? "P" : "A"
             }));
-            
+
+            const subjectDetails = subjects.find(subject => subject.uniqueId === selectedSubject);
+
             // Create the payload with the correct format
             const payload = {
                 academicYearId: selectedYear,
-                subjectId: selectedSubject,
+                subjectId: subjectDetails?._id,
                 staffId: selectedStaff,
                 attendanceDate: attendanceDate,
-                studentAttendance: formattedStudentAttendance
+                studentAttendance: formattedStudentAttendance,
+                sectionId: selectedSectionId
             };
-            
+
             console.log("Submitting payload:", payload); // Debug log
-            
             // Replace with your actual API endpoint
             const response = await fetch('/api/attendance', {
                 method: 'POST',
@@ -235,7 +256,7 @@ export default function AttendanceAddPage() {
                 },
                 body: JSON.stringify(payload),
             });
-            
+
             if (response.ok) {
                 toast.success('Attendance submitted successfully');
                 // Reset form or redirect as needed
@@ -260,14 +281,18 @@ export default function AttendanceAddPage() {
         setAttendanceDate('');
         setAttendanceData([]);
         setStudents([]);
-        setStaff([]);
     };
 
     // Handle subject selection change
     const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newSubject = e.target.value;
-        setSelectedSubject(newSubject);
-        // Reset dependent fields
+        const selectedUniqueId = e.target.value;
+        const subject = subjects.find(s => s.uniqueId === selectedUniqueId);
+        
+        // Get the section ID that matches the selected section
+        const sectionId = subject?.sectionIds.find(s => s.section === subject.section)?._id || '';
+        
+        setSelectedSubject(selectedUniqueId); // Store uniqueId instead of _id
+        setSelectedSectionId(sectionId);
         setSelectedStaff('');
         setAttendanceDate('');
         setAttendanceData([]);
@@ -328,14 +353,18 @@ export default function AttendanceAddPage() {
                             <div className="relative">
                                 <select
                                     className="select select-bordered w-full bg-base-100 text-base-content"
-                                    value={selectedSubject}
+                                    value={selectedSubject || ''}
                                     onChange={handleSubjectChange}
                                     disabled={!selectedYear || isLoadingSubjects}
                                 >
                                     <option value="">Select Subject</option>
-                                    {subjects.map((subject: any) => (
-                                        <option key={subject._id} value={subject._id} className="text-base-content bg-base-100">
-                                            {subject.subject} - {subject.class} {subject.section}
+                                    {subjects.map((subject) => (
+                                        <option
+                                            key={subject.uniqueId}
+                                            value={subject.uniqueId}
+                                            className="text-base-content bg-base-100"
+                                        >
+                                            {subject.displayName}
                                         </option>
                                     ))}
                                 </select>

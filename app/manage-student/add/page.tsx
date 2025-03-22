@@ -97,7 +97,6 @@ export default function AddStudentPage() {
         if (!response.ok || !studentClassResponse.ok) throw new Error('Failed to fetch user data');
         const data = await response.json();
         const studentClassData = await studentClassResponse.json();
-        debugger;
         setValue("firstName", data.firstName || '');
         setValue("lastName", data.lastName || '');
         setValue("email", data.email || '');

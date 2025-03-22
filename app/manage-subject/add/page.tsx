@@ -250,7 +250,6 @@ export default function AddSubjectPage() {
             ? { ...data, id }
             : { ...data };
 
-        debugger;
         const response = await fetch(`/api/manage-subject${id ? `?id=${id}` : ''}`, {
             method: method,
             headers: {

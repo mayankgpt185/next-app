@@ -5,29 +5,30 @@ import User from "@/app/api/models/user";
 import { Course } from "../models/course";
 import Session from "../models/session";
 import Attendance from "../models/attendance";
+import { Section } from "../models/section";
 
 export async function POST(request: Request) {
   try {
-    debugger;
     await dbConnect();
     const data = await request.json();
-    debugger;
 
     // Verify that class and section exist
     const subjectExists = await Subject.findById(data.subjectId);
     const academicYearExists = await Session.findById(data.academicYearId);
-    
-    if (!subjectExists || !academicYearExists) {
+    const sectionExists = await Section.findById(data.sectionId);
+
+    if (!subjectExists || !academicYearExists || !sectionExists) {
       return NextResponse.json(
-        { error: "Invalid subject or academic year" },
+        { error: "Invalid subject or academic year or section" },
         { status: 400 }
       );
     }
-    debugger;
 
     // Verify all staff IDs exist
     const studentIds = Array.isArray(data.studentAttendance)
-      ? data.studentAttendance.map((student: { studentId: string }) => student.studentId)
+      ? data.studentAttendance.map(
+          (student: { studentId: string }) => student.studentId
+        )
       : [data.studentAttendance.studentId];
     const studentCount = await User.countDocuments({
       _id: { $in: studentIds },
@@ -39,11 +40,11 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    debugger;
 
     const attendance = await Attendance.create({
       academicYearId: data.academicYearId,
       subjectId: data.subjectId,
+      sectionId: data.sectionId,
       staffId: data.staffId,
       studentAttendance: data.studentAttendance,
       attendanceDate: data.attendanceDate,
