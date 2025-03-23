@@ -374,7 +374,13 @@ export default function ViewAttendancePage() {
                                 {students.length > 0 && (
                                     <div className="overflow-x-auto flex-1">
                                         <div className="flex justify-between items-center mb-4">
-                                            <div></div>
+                                            <div>
+                                                {staffInfo && (
+                                                    <p className="text-base-content">
+                                                        <span className="font-semibold">Recorded by:</span> {staffInfo.firstName} {staffInfo.lastName}
+                                                    </p>
+                                                )}
+                                            </div>
                                             {isEditing ? (
                                                 <div className="flex gap-2">
                                                     <button 

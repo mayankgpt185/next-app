@@ -99,20 +99,20 @@ const Sidebar = () => {
                 <lucideReact.FileChartLine className="w-5 h-5 text-info" />
               </button>
             </div>
+            <div className="tooltip tooltip-right" data-tip="Leave">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/leave' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/leave')}
+              >
+                <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
+              </button>
+            </div>
             <div className="tooltip tooltip-right" data-tip="Feedback">
               <button
                 className={`btn btn-ghost btn-circle ${currentPath === '/feedback' ? 'btn-active' : ''}`}
                 onClick={() => handleNavigation('/feedback')}
               >
               <lucideReact.Sticker className="w-5 h-5 text-error" />
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="Leave">
-              <button
-                className={`btn btn-ghost btn-circle ${currentPath === '/leave' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/leave')}
-              >
-                <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
               </button>
             </div>
           </div>
@@ -197,16 +197,16 @@ const Sidebar = () => {
                   <span>View Attendance</span>
                 </a>
               </li>
+              <li className={currentPath === '/leave' ? 'active' : ''} onClick={() => handleNavigation('/leave')}>
+                <a className="flex items-center space-x-3">
+                  <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
+                  <span>Leave</span>
+                </a>
+              </li>
               <li className={currentPath === '/feedback' ? 'active' : ''} onClick={() => handleNavigation('/feedback')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.Sticker className="w-5 h-5 text-error" />
                   <span>Feedback</span>
-                </a>
-              </li>
-              <li className={currentPath === '/leave' ? 'active' : ''} onClick={() => handleNavigation('/leave')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.DoorOpen className="w-5 h-5 text-neutral" />
-                  <span>Leave</span>
                 </a>
               </li>
             </ul>
