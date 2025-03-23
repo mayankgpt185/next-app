@@ -103,65 +103,44 @@ export async function PUT(request: Request) {
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+
     const data = await request.json();
 
     if (!id) {
       return NextResponse.json(
-        { error: "Subject ID is required" },
+        { error: "Attendance ID is required" },
         { status: 400 }
       );
     }
 
-    // Find course by ID
-    const courseExists = await Course.findById(data.courseId);
-    const academicYearExists = await Session.findById(data.academicYearId);
-
-    if (!courseExists || !academicYearExists) {
+    // Find by ID
+    const attendanceExists = await Attendance.findById(id);
+    if (!attendanceExists) {
       return NextResponse.json(
-        { error: "Invalid course or academic year" },
+        { error: "Invalid attendance" },
         { status: 400 }
       );
     }
 
-    // Verify all staff IDs exist
-    const staffIds = Array.isArray(data.staffIds)
-      ? data.staffIds
-      : [data.staffIds];
-    const staffCount = await User.countDocuments({
-      _id: { $in: staffIds },
-    });
-
-    if (staffCount !== staffIds.length) {
-      return NextResponse.json(
-        { error: "One or more staff members not found" },
-        { status: 400 }
-      );
-    }
-
-    const subject = await Subject.findByIdAndUpdate(
+    const attendance = await Attendance.findByIdAndUpdate(
       id,
       {
-        subject: data.subject,
-        courseId: data.courseId,
-        staffIds: staffIds,
-        academicYearId: data.academicYearId,
+        studentAttendance: data.studentAttendance,
         modifiedDate: new Date(),
       },
       { new: true }
     )
-      .populate("courseId")
-      .populate("staffIds")
-      .populate("academicYearId");
+      .populate("studentAttendance");
 
-    if (!subject) {
-      return NextResponse.json({ error: "Subject not found" }, { status: 404 });
+    if (!attendance) {
+      return NextResponse.json({ error: "Attendance not found" }, { status: 404 });
     }
 
-    return NextResponse.json(subject);
+    return NextResponse.json(attendance);
   } catch (error) {
-    console.error("Error in PUT /api/manage-subject:", error);
+    console.error("Error in PUT /api/attendance:", error);
     return NextResponse.json(
-      { error: "Failed to update subject" },
+      { error: "Failed to update attendance" },
       { status: 500 }
     );
   }

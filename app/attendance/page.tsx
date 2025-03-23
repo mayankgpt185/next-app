@@ -18,6 +18,9 @@ export default function ViewAttendancePage() {
     const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
     const [staffInfo, setStaffInfo] = useState<{ firstName?: string, lastName?: string } | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedStudents, setEditedStudents] = useState<{ _id: string, name: string, status: string }[]>([]);
+    const [hasChanges, setHasChanges] = useState(false);
 
     // Fetch classes and sections and combine them
     useEffect(() => {
@@ -156,7 +159,7 @@ export default function ViewAttendancePage() {
                         const student = studentsData.find((s: any) => s._id === attendance.studentId);
                         return {
                             _id: attendance.studentId,
-                            name: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
+                            name: student ? `${student.firstName} ${student.lastName}` : '',
                             status: attendance.status
                         };
                     });
@@ -196,6 +199,67 @@ export default function ViewAttendancePage() {
         } finally {
             setIsLoadingAttendance(false);
         }
+    };
+
+    // Handle status change when editing
+    const handleStatusChange = (studentId: string, newStatus: string) => {
+        setEditedStudents(prev => 
+            prev.map(student => 
+                student._id === studentId ? {...student, status: newStatus} : student
+            )
+        );
+        setHasChanges(true);
+    };
+
+    // Save updated attendance
+    const saveAttendance = async () => {
+        if (!selectedClassSection || !selectedSubject || !attendanceDate) {
+            toast.error('Missing required information');
+            return;
+        }
+
+        try {
+            const attendanceRecord = attendanceRecords[0];
+            
+            // Create a complete updated attendance object
+            const updatedAttendance = {
+                ...attendanceRecord,
+                studentAttendance: editedStudents.map(student => ({
+                    studentId: student._id,
+                    status: student.status
+                }))
+            };
+            debugger;
+            
+            const response = await fetch(`/api/attendance?id=${attendanceRecord._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedAttendance),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update attendance');
+            }
+            
+            toast.success('Attendance updated successfully');
+            setIsEditing(false);
+            setStudents(editedStudents);
+        } catch (error) {
+            console.error('Error updating attendance:', error);
+            toast.error('Failed to update attendance');
+        }
+    };
+
+    // Toggle edit mode
+    const toggleEditMode = () => {
+        if (!isEditing) {
+            // When entering edit mode, initialize editedStudents with current data
+            setEditedStudents([...students]);
+            setHasChanges(false);
+        }
+        setIsEditing(!isEditing);
     };
 
     return (
@@ -309,6 +373,33 @@ export default function ViewAttendancePage() {
                                 
                                 {students.length > 0 && (
                                     <div className="overflow-x-auto flex-1">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <div></div>
+                                            {isEditing ? (
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        className="btn btn-success"
+                                                        onClick={saveAttendance}
+                                                        disabled={!hasChanges}
+                                                    >
+                                                        Save Changes
+                                                    </button>
+                                                    <button 
+                                                        className="btn btn-error"
+                                                        onClick={() => setIsEditing(false)}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    className="btn btn-primary"
+                                                    onClick={toggleEditMode}
+                                                >
+                                                    Edit Attendance
+                                                </button>
+                                            )}
+                                        </div>
                                         <div className="overflow-y-auto h-[calc(100vh-280px)]">
                                             <table className="table table-pin-rows">
                                                 <thead className="sticky top-0 bg-base-300">
@@ -318,14 +409,31 @@ export default function ViewAttendancePage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {students.map((student) => (
+                                                    {(isEditing ? editedStudents : students).map((student) => (
                                                         <tr key={student._id} className="hover:bg-base-200">
                                                             <td className="text-base-content">{student.name}</td>
                                                             <td className="text-center">
-                                                                {student.status === 'P' ? (
-                                                                    <span className="badge badge-success text-white">Present</span>
+                                                                {isEditing ? (
+                                                                    <label className="cursor-pointer flex items-center justify-center">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="checkbox checkbox-primary"
+                                                                            checked={student.status === 'P'}
+                                                                            onChange={() => handleStatusChange(student._id, student.status === 'P' ? 'A' : 'P')}
+                                                                        />
+                                                                        <span className="ml-2 text-base-content">
+                                                                            {student.status === 'P' ?
+                                                                                <span className="text-success">Present</span> :
+                                                                                <span className="text-error">Absent</span>
+                                                                            }
+                                                                        </span>
+                                                                    </label>
                                                                 ) : (
-                                                                    <span className="badge badge-error text-white">Absent</span>
+                                                                    student.status === 'P' ? (
+                                                                        <span className="badge badge-success text-white">Present</span>
+                                                                    ) : (
+                                                                        <span className="badge badge-error text-white">Absent</span>
+                                                                    )
                                                                 )}
                                                             </td>
                                                         </tr>
