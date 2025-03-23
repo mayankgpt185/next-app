@@ -6,6 +6,7 @@ import { Course } from "../models/course";
 import Session from "../models/session";
 import Attendance from "../models/attendance";
 import { Section } from "../models/section";
+import Class from "../models/class";
 
 export async function POST(request: Request) {
   try {
@@ -16,10 +17,16 @@ export async function POST(request: Request) {
     const subjectExists = await Subject.findById(data.subjectId);
     const academicYearExists = await Session.findById(data.academicYearId);
     const sectionExists = await Section.findById(data.sectionId);
+    const classExists = await Class.findById(data.classId);
 
-    if (!subjectExists || !academicYearExists || !sectionExists) {
+    if (
+      !subjectExists ||
+      !academicYearExists ||
+      !sectionExists ||
+      !classExists
+    ) {
       return NextResponse.json(
-        { error: "Invalid subject or academic year or section" },
+        { error: "Invalid subject or academic year or section or class" },
         { status: 400 }
       );
     }
@@ -44,6 +51,7 @@ export async function POST(request: Request) {
     const attendance = await Attendance.create({
       academicYearId: data.academicYearId,
       subjectId: data.subjectId,
+      classId: data.classId,
       sectionId: data.sectionId,
       staffId: data.staffId,
       studentAttendance: data.studentAttendance,
@@ -66,49 +74,32 @@ export async function GET(request: Request) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    const academicYear = searchParams.get("academicYear");
-    if (id) {
-      const subject = await Subject.findById(id)
-        .where({ isActive: true })
-        .populate("courseId")
-        .populate("staffIds")
-        .populate("academicYearId")
-        .select("-__v");
+    const subjectId = searchParams.get("subjectId");
+    const sectionId = searchParams.get("sectionId");
+    const attendanceDate = searchParams.get("attendanceDate");
+    const classId = searchParams.get("classId");
 
-      if (!subject) {
-        return NextResponse.json(
-          { error: "Subject not found" },
-          { status: 404 }
-        );
-      }
+    const attendance = await Attendance.find({
+      subjectId: subjectId,
+      classId: classId,
+      sectionId: sectionId,
+      attendanceDate: attendanceDate,
+    })
+      .populate("studentAttendance")
+      .select("-__v");
 
-      return NextResponse.json(subject);
-    } else if (academicYear) {
-      const subjects = await Subject.find({
-        academicYearId: academicYear,
-        isActive: true,
-      })
-        .populate("courseId")
-        .populate("staffIds")
-        .populate("academicYearId")
-        .select("-__v");
-
-      return NextResponse.json(subjects);
-    } else {
-      const subjects = await Subject.find({})
-        .where({ isActive: true })
-        .populate("courseId")
-        .populate("staffIds")
-        .populate("academicYearId")
-        .select("-__v");
-
-      return NextResponse.json(subjects);
+    if (!attendance || attendance.length === 0) {
+      return NextResponse.json(
+        { error: "Attendance not found" },
+        { status: 404 }
+      );
     }
+
+    return NextResponse.json(attendance);
   } catch (error) {
-    console.error("Error in GET /api/manage-subject:", error);
+    console.error("Error in GET /api/attendance:", error);
     return NextResponse.json(
-      { error: "Failed to fetch subjects" },
+      { error: "Failed to fetch attendance" },
       { status: 500 }
     );
   }

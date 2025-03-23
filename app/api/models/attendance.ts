@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 export interface IAttendance extends Document {
   academicYearId: string;
   subjectId: string;
+  classId: string;
   sectionId: string;
   staffId: string;
   attendanceDate: string;
@@ -22,6 +23,11 @@ const AttendanceSchema = new mongoose.Schema(
     subjectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "subjects",
+      required: true,
+    },
+    classId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "classes",
       required: true,
     },
     sectionId: {

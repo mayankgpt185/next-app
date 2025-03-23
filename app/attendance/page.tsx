@@ -74,7 +74,6 @@ export default function ViewAttendancePage() {
         const fetchSubjects = async () => {
             try {
                 setIsLoadingSubjects(true);
-                // Note: Removed academicYear parameter since we're not using it anymore
                 const response = await fetch(`/api/manage-subject?classId=${classId}&sectionId=${sectionId}`);
                 
                 if (!response.ok) {
@@ -86,6 +85,7 @@ export default function ViewAttendancePage() {
             } catch (error) {
                 console.error('Error fetching subjects:', error);
                 setSubjects([]);
+                toast.error('Failed to fetch subjects');
             } finally {
                 setIsLoadingSubjects(false);
             }

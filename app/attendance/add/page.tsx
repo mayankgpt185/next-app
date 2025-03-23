@@ -244,10 +244,10 @@ export default function AttendanceAddPage() {
                 staffId: selectedStaff,
                 attendanceDate: attendanceDate,
                 studentAttendance: formattedStudentAttendance,
-                sectionId: selectedSectionId
+                sectionId: selectedSectionId,
+                classId: selectedClassId
             };
 
-            console.log("Submitting payload:", payload); // Debug log
             // Replace with your actual API endpoint
             const response = await fetch('/api/attendance', {
                 method: 'POST',
@@ -290,9 +290,10 @@ export default function AttendanceAddPage() {
         
         // Get the section ID that matches the selected section
         const sectionId = subject?.sectionIds.find(s => s.section === subject.section)?._id || '';
-        
+        const classId = subject?.courseId.class || '';
         setSelectedSubject(selectedUniqueId); // Store uniqueId instead of _id
         setSelectedSectionId(sectionId);
+        setSelectedClassId(classId);
         setSelectedStaff('');
         setAttendanceDate('');
         setAttendanceData([]);

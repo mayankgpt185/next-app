@@ -76,7 +76,33 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const academicYear = searchParams.get("academicYear");
-    if (id) {
+    const classId = searchParams.get("classId");
+    const sectionId = searchParams.get("sectionId");
+    
+    if (classId && sectionId) {
+      // First, find all courses with the specified class ID
+      const courses = await Course.find({
+        class: classId,
+        isActive: true
+      });
+      
+      // Get the course IDs
+      const courseIds = courses.map(course => course._id);
+      
+      // Then find subjects that reference these courses and contain the section ID
+      const subjects = await Subject.find({
+        courseId: { $in: courseIds },
+        sectionIds: { $in: [sectionId] },
+        isActive: true,
+      })
+        .populate("courseId")
+        .populate("staffIds")
+        .populate("academicYearId")
+        .populate("sectionIds")
+        .select("-__v");
+
+      return NextResponse.json(subjects);
+    } else if (id) {
       const subject = await Subject.findById(id)
         .where({ isActive: true })
         .populate("courseId")
