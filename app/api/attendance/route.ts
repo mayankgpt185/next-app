@@ -88,13 +88,6 @@ export async function GET(request: Request) {
       .populate("studentAttendance")
       .select("-__v");
 
-    if (!attendance || attendance.length === 0) {
-      return NextResponse.json(
-        { error: "Attendance not found" },
-        { status: 404 }
-      );
-    }
-
     return NextResponse.json(attendance);
   } catch (error) {
     console.error("Error in GET /api/attendance:", error);

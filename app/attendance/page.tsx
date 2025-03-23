@@ -17,6 +17,7 @@ export default function ViewAttendancePage() {
     const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
     const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
+    const [staffInfo, setStaffInfo] = useState<{ firstName?: string, lastName?: string } | null>(null);
 
     // Fetch classes and sections and combine them
     useEffect(() => {
@@ -161,19 +162,37 @@ export default function ViewAttendancePage() {
                     });
                     
                     setStudents(studentAttendance);
+                    
+                    // Fetch staff information if available
+                    if (data[0].staffId) {
+                        try {
+                            const staffResponse = await fetch(`/api/manage-staff?id=${data[0].staffId}`);
+                            if (staffResponse.ok) {
+                                const staffData = await staffResponse.json();
+                                setStaffInfo(staffData);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching staff details:', error);
+                            setStaffInfo(null);
+                        }
+                    } else {
+                        setStaffInfo(null);
+                    }
                 } else {
                     setStudents([]);
+                    setStaffInfo(null);
                 }
             } else {
                 setAttendanceRecords([]);
                 setStudents([]);
-                toast.error('No attendance records found for the selected criteria');
+                setStaffInfo(null);
+                toast.error('No attendance records found!');
             }
         } catch (error) {
-            console.error('Error fetching attendance:', error);
             toast.error('Error fetching attendance records');
             setAttendanceRecords([]);
             setStudents([]);
+            setStaffInfo(null);
         } finally {
             setIsLoadingAttendance(false);
         }
@@ -284,34 +303,36 @@ export default function ViewAttendancePage() {
                             <div className="mt-6">
                                 <h2 className="text-xl font-semibold mb-4 text-base-content">
                                     {students.length > 0 
-                                        ? `Attendance Records (${new Date(attendanceDate).toLocaleDateString()})`
-                                        : 'No attendance records found for the selected criteria'}
+                                        ? `Attendance Records (${new Date(attendanceDate).toLocaleDateString('en-GB', {day: '2-digit', month: 'long', year: 'numeric'})})` 
+                                        : 'No attendance records found!'}
                                 </h2>
                                 
                                 {students.length > 0 && (
-                                    <div className="overflow-x-auto">
-                                        <table className="table w-full">
-                                            <thead>
-                                                <tr>
-                                                    <th className="bg-base-200 text-base-content">Student Name</th>
-                                                    <th className="bg-base-200 text-base-content text-center">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {students.map((student) => (
-                                                    <tr key={student._id} className="hover">
-                                                        <td className="text-base-content">{student.name}</td>
-                                                        <td className="text-center">
-                                                            {student.status === 'P' ? (
-                                                                <span className="badge badge-success">Present</span>
-                                                            ) : (
-                                                                <span className="badge badge-error">Absent</span>
-                                                            )}
-                                                        </td>
+                                    <div className="overflow-x-auto flex-1">
+                                        <div className="overflow-y-auto h-[calc(100vh-280px)]">
+                                            <table className="table table-pin-rows">
+                                                <thead className="sticky top-0 bg-base-300">
+                                                    <tr>
+                                                        <th className="text-base-content">Student Name</th>
+                                                        <th className="text-base-content text-center">Status</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    {students.map((student) => (
+                                                        <tr key={student._id} className="hover:bg-base-200">
+                                                            <td className="text-base-content">{student.name}</td>
+                                                            <td className="text-center">
+                                                                {student.status === 'P' ? (
+                                                                    <span className="badge badge-success text-white">Present</span>
+                                                                ) : (
+                                                                    <span className="badge badge-error text-white">Absent</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 )}
                             </div>
