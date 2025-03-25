@@ -99,10 +99,10 @@ const Sidebar = () => {
                 <lucideReact.FileChartLine className="w-5 h-5 text-info" />
               </button>
             </div>
-            <div className="tooltip tooltip-right" data-tip="Leave">
+            <div className="tooltip tooltip-right" data-tip="Apply Leave">
               <button
-                className={`btn btn-ghost btn-circle ${currentPath === '/leave' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/leave')}
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-leave/add' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-leave/add')}
               >
                 <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
               </button>
@@ -197,10 +197,10 @@ const Sidebar = () => {
                   <span>View Attendance</span>
                 </a>
               </li>
-              <li className={currentPath === '/leave' ? 'active' : ''} onClick={() => handleNavigation('/leave')}>
+              <li className={currentPath === '/manage-leave/add' ? 'active' : ''} onClick={() => handleNavigation('/manage-leave/add')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
-                  <span>Leave</span>
+                  <span>Apply Leave</span>
                 </a>
               </li>
               <li className={currentPath === '/feedback' ? 'active' : ''} onClick={() => handleNavigation('/feedback')}>
