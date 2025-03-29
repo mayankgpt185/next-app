@@ -6,15 +6,15 @@
   --foreground-rgb: 0, 0, 0;
   --toast-bg: white; /* Light mode background */
   --toast-text: black; /* Light mode text */
-  --scrollbar-thumb: #888;
-  --scrollbar-track: #f0f0f0;
+  --scrollbar-thumb: #ccc; /* Lighter thumb color for light mode */
+  --scrollbar-track: #e0e0e0; /* Lighter track color for light mode */
 }
 
 .dark {
   --toast-bg: #1f2937; /* Dark mode background (gray-800) */
   --toast-text: white; /* Dark mode text */
-  --scrollbar-thumb: #555;
-  --scrollbar-track: #333;
+  --scrollbar-thumb: #555; /* Darker thumb color for dark mode */
+  --scrollbar-track: #333; /* Darker track color for dark mode */
 }
 
 body {
@@ -51,12 +51,12 @@ input.read-only {
 }
 
 .custom-scrollbar-sidebar {
-  scrollbar-width: thin; /* For Firefox */
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); /* Thumb and track color */
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
 }
 
 .custom-scrollbar-sidebar::-webkit-scrollbar {
-  width: 4px; /* Width of the scrollbar */
+  display: none; /* For Chrome, Safari, and Opera */
 }
 
 .custom-scrollbar-sidebar::-webkit-scrollbar-track {
@@ -70,5 +70,5 @@ input.read-only {
 }
 
 .custom-scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
-  background: darken(var(--scrollbar-thumb), 10%); /* Darken on hover */
+  background: #aaa; /* Slightly darker on hover for light mode */
 }
