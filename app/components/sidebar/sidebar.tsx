@@ -36,9 +36,9 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex">
       {/* Sidebar - Fixed */}
-      <div className={`flex flex-col ${isExpanded ? 'w-64' : 'w-16'} h-full bg-base-300 border-r border-base-200 shrink-0 transition-all duration-300 ease-in-out`}>
+      <div className={`fixed top-0 left-0 flex flex-col ${isExpanded ? 'w-64' : 'w-16'} h-full bg-base-300 border-r border-base-200 transition-all duration-300 ease-in-out`}>
         {/* Expander Button - Fixed at the top */}
         <div className="p-4 border-b border-base-200">
           <button
@@ -162,7 +162,7 @@ const Sidebar = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 ml-16 overflow-y-auto">
         {/* Main content goes here */}
       </div>
     </div>
