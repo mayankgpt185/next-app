@@ -1,14 +1,25 @@
 import React from 'react';
 import { AlertDialog } from 'radix-ui';
 
-interface DeletePopupProps {
+interface ModalPopupProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
     message?: string;
+    cancelButtonText?: string;
+    confirmButtonText?: string;
+    confirmButtonColor?: string;
 }
 
-const DeletePopup: React.FC<DeletePopupProps> = ({ isOpen, onClose, onConfirm, message }) => (
+const ModalPopup: React.FC<ModalPopupProps> = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    message,
+    cancelButtonText = 'Cancel',
+    confirmButtonText = 'Yes, Delete',
+    confirmButtonColor = 'bg-red-600'
+}) => (
     <AlertDialog.Root open={isOpen} onOpenChange={onClose}>
         <AlertDialog.Portal>
             <AlertDialog.Overlay className="fixed inset-0 bg-blackA6 data-[state=open]:animate-overlayShow" />
@@ -22,12 +33,12 @@ const DeletePopup: React.FC<DeletePopupProps> = ({ isOpen, onClose, onConfirm, m
                 <div className="flex justify-end gap-4">
                     <AlertDialog.Cancel asChild>
                         <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">
-                            Cancel
+                            {cancelButtonText}
                         </button>
                     </AlertDialog.Cancel>
                     <AlertDialog.Action asChild>
-                        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded">
-                            Yes, Delete
+                        <button onClick={onConfirm} className={`px-4 py-2 text-white rounded ${confirmButtonColor}`}>
+                            {confirmButtonText}
                         </button>
                     </AlertDialog.Action>
                 </div>
@@ -36,4 +47,4 @@ const DeletePopup: React.FC<DeletePopupProps> = ({ isOpen, onClose, onConfirm, m
     </AlertDialog.Root>
 );
 
-export default DeletePopup;
+export default ModalPopup;

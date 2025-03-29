@@ -107,10 +107,10 @@ const Sidebar = () => {
                 <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
               </button>
             </div>
-            <div className="tooltip tooltip-right" data-tip="Feedback">
+            <div className="tooltip tooltip-right" data-tip="View Leave">
               <button
-                className={`btn btn-ghost btn-circle ${currentPath === '/feedback' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/feedback')}
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-leave' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-leave')}
               >
               <lucideReact.Sticker className="w-5 h-5 text-error" />
               </button>
@@ -203,10 +203,10 @@ const Sidebar = () => {
                   <span>Apply Leave</span>
                 </a>
               </li>
-              <li className={currentPath === '/feedback' ? 'active' : ''} onClick={() => handleNavigation('/feedback')}>
+              <li className={currentPath === '/manage-leave' ? 'active' : ''} onClick={() => handleNavigation('/manage-leave')}>
                 <a className="flex items-center space-x-3">
                   <lucideReact.Sticker className="w-5 h-5 text-error" />
-                  <span>Feedback</span>
+                  <span>View Leave</span>
                 </a>
               </li>
             </ul>

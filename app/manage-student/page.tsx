@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { formatDate } from '@/utils/dateUtils';
-import DeletePopup from '../components/ui/deletePopup';
+import ModalPopup from '../components/ui/modalPopup';
 import toast from 'react-hot-toast';
 
 interface StudentMember {
@@ -187,7 +187,7 @@ export default function ManageStudentPage() {
                     </div>
                 </div>
             </div>
-            <DeletePopup
+            <ModalPopup
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleDeleteConfirm}

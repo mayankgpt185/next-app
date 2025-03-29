@@ -7,16 +7,6 @@ export async function POST(request: Request) {
     await dbConnect();
     const data = await request.json();
 
-    // Verify that class exist
-    // const classExists = await Leave.findById(data.classId);
-
-    // if (!classExists) {
-    //   return NextResponse.json(
-    //     { error: "Invalid class" },
-    //     { status: 400 }
-    //   );
-    // }
-
     const leave = await Leave.create({
       staffId: data.staffId,
       approverId: data.approverId,
@@ -41,6 +31,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const approverId = searchParams.get("approverId");
     if (id) {
       const leave = await Leave.findById(id)
         .where({ isActive: true })
@@ -54,8 +45,9 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json(leave);
-    } else {
-      const leaves = await Leave.find({})
+    } else if (approverId) {
+      const leaves = await Leave.find({ approverId: approverId })
+        .populate("staffId")
         .where({ isActive: true })
         .select("-__v");
 
