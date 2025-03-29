@@ -1,25 +1,31 @@
 import dbConnect from "@/lib/mongodb";
-import Leave from "../models/leave";
 import { NextRequest, NextResponse } from "next/server";
+import Result from "../models/result";
 
 export async function POST(request: Request) {
   try {
     await dbConnect();
     const data = await request.json();
 
-    const leave = await Leave.create({
+    const result = await Result.create({
       staffId: data.staffId,
-      approverId: data.approverId,
-      leaveFromDate: data.leaveFromDate,
-      leaveToDate: data.leaveToDate,
-      reason: data.reason,
+      studentId: data.studentId,
+      subjectId: data.subjectId,
+      examDate: data.examDate,
+      examType: data.examType,
+      marks: data.marks,
+      totalMarks: data.totalMarks,
+      grade: data.grade,
+      percentage: data.percentage,
+      resultStatus: data.resultStatus,
+      attendanceStatus: data.attendanceStatus,
     });
 
-    return NextResponse.json(leave);
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("Error in POST /api/leave:", error);
+    console.error("Error in POST /api/result:", error);
     return NextResponse.json(
-      { error: "Failed to create leave" },
+      { error: "Failed to create result" },
       { status: 500 }
     );
   }
@@ -33,30 +39,30 @@ export async function GET(request: Request) {
     const id = searchParams.get("id");
     const approverId = searchParams.get("approverId");
     if (id) {
-      const leave = await Leave.findById(id)
+      const result = await Result.findById(id)
         .where({ isActive: true })
         .select("-__v");
 
-      if (!leave) {
+      if (!result) {
         return NextResponse.json(
-          { error: "Leave not found" },
+          { error: "Result not found" },
           { status: 404 }
         );
       }
 
-      return NextResponse.json(leave);
+      return NextResponse.json(result);
     } else if (approverId) {
-      const leaves = await Leave.find({ approverId: approverId })
+      const results = await Result.find({ approverId: approverId })
         .populate("staffId")
         .where({ isActive: true })
         .select("-__v");
 
-      return NextResponse.json(leaves);
+      return NextResponse.json(results);
     }
   } catch (error) {
-    console.error("Error in GET /api/leave:", error);
+    console.error("Error in GET /api/result:", error);
     return NextResponse.json(
-      { error: "Failed to fetch leaves" },
+      { error: "Failed to fetch results" },
       { status: 500 }
     );
   }
@@ -71,46 +77,51 @@ export async function PUT(request: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { error: "Leave ID is required" },
+        { error: "Result ID is required" },
         { status: 400 }
       );
     }
 
-    const leaveExists = await Leave.findById(id);
+    const resultExists = await Result.findById(id);
 
-    if (!leaveExists) {
+    if (!resultExists) {
       return NextResponse.json(
-        { error: "Invalid leave" },
+        { error: "Invalid result" },
         { status: 400 }
       );
     }
 
     let updateData: any = {};
     if (status && id) {
-      updateData.status = status;
+        updateData.status = status;
     } else {
       const data = await request.json();
 
       updateData = {
         approverId: data.approverId,
-        leaveFromDate: data.leaveFromDate,
-        leaveToDate: data.leaveToDate,
-        reason: data.reason,
+        examDate: data.examDate,
+        examType: data.examType,
+        marks: data.marks,
+        totalMarks: data.totalMarks,
+        grade: data.grade,
+        percentage: data.percentage,
+        resultStatus: data.resultStatus,
+        attendanceStatus: data.attendanceStatus,
         modifiedDate: new Date(),
       };
     }
 
-    const leave = await Leave.findByIdAndUpdate(id, updateData, { new: true });
+    const result = await Result.findByIdAndUpdate(id, updateData, { new: true });
 
-    if (!leave) {
-      return NextResponse.json({ error: "Leave not found" }, { status: 404 });
+    if (!result) {
+      return NextResponse.json({ error: "Result not found" }, { status: 404 });
     }
 
-    return NextResponse.json(leave);
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("Error in PUT /api/leave:", error);
+    console.error("Error in PUT /api/result:", error);
     return NextResponse.json(
-      { error: "Failed to update leave" },
+      { error: "Failed to update result" },
       { status: 500 }
     );
   }
@@ -122,12 +133,12 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (id) {
-    const leave = await Leave.findByIdAndUpdate(id, { isActive: false });
-    if (leave) {
-      return NextResponse.json(leave, { status: 201 });
+    const result = await Result.findByIdAndUpdate(id, { isActive: false });
+    if (result) {
+      return NextResponse.json(result, { status: 201 });
     } else {
       return NextResponse.json(
-        { message: "Leave not found to delete" },
+        { message: "Result not found to delete" },
         { status: 404 }
       );
     }

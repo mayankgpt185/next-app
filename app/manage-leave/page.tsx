@@ -11,7 +11,8 @@ export default function ViewLeavePage() {
         staffId: { firstName: string; lastName: string }, 
         reason: string, 
         leaveFromDate: string, 
-        leaveToDate: string 
+        leaveToDate: string,
+        status: string
     }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [approvers, setApprovers] = useState([]);
@@ -64,43 +65,37 @@ export default function ViewLeavePage() {
     }, [selectedApproverId]);
 
     const handleApprove = async (id: string) => {
-        const confirmApprove = window.confirm('Are you sure you want to approve this leave?');
-        if (!confirmApprove) return;
-
         try {
-            const response = await fetch(`/api/leave/${id}/approve`, {
-                method: 'POST',
+            const response = await fetch(`/api/leave?id=${id}&status=Approved`, {
+                method: 'PUT',
             });
 
             if (!response.ok) {
                 throw new Error('Failed to approve leave');
             }
-
             toast.success('Leave approved successfully');
-            setLeaveApplications(prev => prev.filter(application => application._id !== id));
+            setLeaveApplications(prev => prev.map(application => 
+                application._id === id ? { ...application, status: 'Approved' } : application
+            ));
         } catch (error) {
-            console.error('Error approving leave:', error);
             toast.error('Failed to approve leave');
         }
     };
 
     const handleCancel = async (id: string) => {
-        const confirmCancel = window.confirm('Are you sure you want to cancel this leave?');
-        if (!confirmCancel) return;
-
         try {
-            const response = await fetch(`/api/leave/${id}/cancel`, {
-                method: 'POST',
+            const response = await fetch(`/api/leave?id=${id}&status=Cancelled`, {
+                method: 'PUT',
             });
 
             if (!response.ok) {
                 throw new Error('Failed to cancel leave');
             }
-
             toast.success('Leave cancelled successfully');
-            setLeaveApplications(prev => prev.filter(application => application._id !== id));
+            setLeaveApplications(prev => prev.map(application => 
+                application._id === id ? { ...application, status: 'Cancelled' } : application
+            ));
         } catch (error) {
-            console.error('Error cancelling leave:', error);
             toast.error('Failed to cancel leave');
         }
     };
@@ -182,16 +177,24 @@ export default function ViewLeavePage() {
                                                 {new Date(application.leaveToDate).toLocaleDateString('en-GB')}
                                             </td>
                                             <td className="text-center">
-                                                <div className="flex justify-center space-x-2">
-                                                    <Check 
-                                                        className="w-5 h-5 cursor-pointer text-success hover:text-success-dark" 
-                                                        onClick={() => openModal('approve', application._id)} 
-                                                    />
-                                                    <X 
-                                                        className="w-5 h-5 cursor-pointer text-error hover:text-error-dark" 
-                                                        onClick={() => openModal('cancel', application._id)} 
-                                                    />
-                                                </div>
+                                                {application.status === 'Pending' ? (
+                                                    <div className="flex justify-center space-x-2">
+                                                        <button 
+                                                            className="btn btn-success btn-sm"
+                                                            onClick={() => openModal('approve', application._id)}
+                                                        >
+                                                            <Check className="w-5 h-5" />
+                                                        </button>
+                                                        <button 
+                                                            className="btn btn-error btn-sm"
+                                                            onClick={() => openModal('cancel', application._id)}
+                                                        >
+                                                            <X className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-base-content">{application.status}</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

@@ -194,7 +194,7 @@ export default function AddLeavePage() {
                         </label>
                         <textarea
                             className="textarea textarea-bordered h-32 bg-base-100 text-base-content"
-                            placeholder="Please provide a detailed reason for your leave request..."
+                            placeholder="Please provide a reason for your leave request"
                             value={leaveReason}
                             onChange={(e) => setLeaveReason(e.target.value)}
                         ></textarea>

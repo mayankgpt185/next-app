@@ -37,20 +37,25 @@ const Sidebar = () => {
 
   return (
     <div className="flex h-screen">
-      {/* Narrow Sidebar - Fixed */}
-      {!isExpanded && (
-        <div className="w-16 bg-base-300 flex flex-col items-center py-4 border-r border-base-200 shrink-0 transition-colors duration-300 ease-in-out">
-          <div className="flex flex-col items-center space-y-4 flex-1">
-            {/* Toggle button */}
-            <div className="tooltip tooltip-right" data-tip="Expand">
-              <button
-                onClick={toggleSidebar}
-                className="btn btn-sm btn-primary"
-              >
-                <lucideReact.ChevronRight className="w-4 h-4 text-primary-content" />
-              </button>
-            </div>
+      {/* Sidebar - Fixed */}
+      <div className={`flex flex-col ${isExpanded ? 'w-64' : 'w-16'} h-full bg-base-300 border-r border-base-200 shrink-0 transition-all duration-300 ease-in-out`}>
+        {/* Expander Button - Fixed at the top */}
+        <div className="p-4 border-b border-base-200">
+          <button
+            onClick={toggleSidebar}
+            className="btn btn-sm btn-primary"
+          >
+            {isExpanded ? (
+              <lucideReact.ChevronLeft className="w-4 h-4 text-primary-content" />
+            ) : (
+              <lucideReact.ChevronRight className="w-4 h-4 text-primary-content" />
+            )}
+          </button>
+        </div>
 
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-sidebar">
+          <div className="flex flex-col items-center space-y-4">
             <div className="tooltip tooltip-right" data-tip="Manage Staff">
               <button
                 className={`btn btn-ghost btn-circle ${currentPath === '/manage-staff' ? 'btn-active' : ''}`}
@@ -72,7 +77,7 @@ const Sidebar = () => {
                 className={`btn btn-ghost btn-circle ${currentPath === '/manage-course' ? 'btn-active' : ''}`}
                 onClick={() => handleNavigation('/manage-course')}
               >
-              <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
+                <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
               </button>
             </div>
             <div className="tooltip tooltip-right" data-tip="Manage Subject">
@@ -81,13 +86,13 @@ const Sidebar = () => {
                 onClick={() => handleNavigation('/manage-subject')}
               >
                 <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
-              </button> 
+              </button>
             </div>
             <div className="tooltip tooltip-right" data-tip="Take Attendance">
               <button
                 className={`btn btn-ghost btn-circle ${currentPath === '/attendance/add' ? 'btn-active' : ''}`}
                 onClick={() => handleNavigation('/attendance/add')}
-            >
+              >
                 <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
               </button>
             </div>
@@ -112,141 +117,54 @@ const Sidebar = () => {
                 className={`btn btn-ghost btn-circle ${currentPath === '/manage-leave' ? 'btn-active' : ''}`}
                 onClick={() => handleNavigation('/manage-leave')}
               >
-              <lucideReact.Sticker className="w-5 h-5 text-error" />
+                <lucideReact.Sticker className="w-5 h-5 text-error" />
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="Add Result">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-result/add' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-result/add')}
+              >
+                <lucideReact.FilePenLine className="w-5 h-5 text-emerald-500" />
+              </button>
+            </div>
+            <div className="tooltip tooltip-right" data-tip="View Result">
+              <button
+                className={`btn btn-ghost btn-circle ${currentPath === '/manage-result' ? 'btn-active' : ''}`}
+                onClick={() => handleNavigation('/manage-result')}
+              >
+                <lucideReact.FileChartColumn className="w-5 h-5 text-purple-500" />
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Bottom section */}
-          <div className="mt-auto flex flex-col items-center space-y-4">
-            <div className="avatar space-y-2">
+        {/* Theme Change Button - Fixed at the bottom */}
+        <div className="p-4 border-t border-base-200">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="avatar">
               <div className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
                 <img src='/images/mayank.jpg' alt="User" />
               </div>
             </div>
-            <div className='flex flex-col items-center space-y-2'>
-              <button
-                onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
-                className="btn btn-ghost btn-circle"
-              >
-                {currentTheme === 'light' ? (
-                  <lucideReact.Moon className="w-5 h-5 text-neutral" />
-                ) : (
-                  <lucideReact.Sun className="w-5 h-5 text-warning" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Wide Sidebar - Scrollable */}
-      {isExpanded && (
-        <div className="w-64 bg-base-300 flex flex-col shrink-0">
-          {/* Fixed Header */}
-          <div className="p-4 border-b border-base-200">
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={toggleSidebar}
-                className="btn btn-sm btn-primary"
-              >
-                <lucideReact.ChevronLeft className="w-4 h-4 text-primary-content" />
-              </button>
-              <div className="flex items-center gap-2">
-                <div className="badge badge-primary p-3">CJS</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto">
-            <ul className="menu p-4 text-base-content">
-              <li className={currentPath === '/manage-staff' ? 'active' : ''} onClick={() => handleNavigation('/manage-staff')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.Users className="w-5 h-5 text-primary" />
-                  <span>Manage Staff</span>
-                </a>
-              </li>
-              <li className={currentPath === '/manage-student' ? 'active' : ''} onClick={() => handleNavigation('/manage-student')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.Contact className="w-5 h-5 text-success" />
-                  <span>Manage Student</span>
-                </a>
-              </li>
-              <li className={currentPath === '/manage-course' ? 'active' : ''} onClick={() => handleNavigation('/manage-course')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
-                  <span>Manage Course</span>
-                </a>
-              </li>
-              <li className={currentPath === '/manage-subject' ? 'active' : ''} onClick={() => handleNavigation('/manage-subject')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
-                  <span>Manage Subject</span>
-                </a>
-              </li>
-              <li className={currentPath === '/attendance/add' ? 'active' : ''} onClick={() => handleNavigation('/attendance/add')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
-                  <span>Take Attendance</span>
-                </a>
-              </li>
-              <li className={currentPath === '/attendance' ? 'active' : ''} onClick={() => handleNavigation('/attendance')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.FileChartLine className="w-5 h-5 text-info" />
-                  <span>View Attendance</span>
-                </a>
-              </li>
-              <li className={currentPath === '/manage-leave/add' ? 'active' : ''} onClick={() => handleNavigation('/manage-leave/add')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
-                  <span>Apply Leave</span>
-                </a>
-              </li>
-              <li className={currentPath === '/manage-leave' ? 'active' : ''} onClick={() => handleNavigation('/manage-leave')}>
-                <a className="flex items-center space-x-3">
-                  <lucideReact.Sticker className="w-5 h-5 text-error" />
-                  <span>View Leave</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Fixed Footer */}
-          <div className="p-4 border-t border-base-200">
-            <Card className="bg-neutral-800 border-0 p-3 mb-3 hover:bg-neutral-700 transition-colors duration-200">
-              <div className="flex items-center space-x-3">
-                <img
-                  src='/images/mayank.jpg'
-                  alt="User"
-                  className="w-8 h-8 rounded-full"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white">Mayank Gupta</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-            <div className="join w-full mb-3">
-              <button
-                onClick={() => setTheme('light')}
-                className={`join-item btn flex-1 ${currentTheme === 'light' ? 'btn-active btn-neutral' : ''}`}
-              >
-                <lucideReact.Sun className="w-5 h-5 mr-2 text-warning" />
-                Light
-              </button>
-              <button
-                onClick={() => setTheme('dark')}
-                className={`join-item btn flex-1 ${currentTheme === 'dark' ? 'btn-active btn-neutral' : ''}`}
-              >
+            <button
+              onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
+              className="btn btn-ghost btn-circle"
+            >
+              {currentTheme === 'light' ? (
                 <lucideReact.Moon className="w-5 h-5 text-neutral" />
-                Dark
-              </button>
-            </div>
+              ) : (
+                <lucideReact.Sun className="w-5 h-5 text-warning" />
+              )}
+            </button>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Main content goes here */}
+      </div>
     </div>
   );
 };

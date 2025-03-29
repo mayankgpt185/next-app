@@ -6,11 +6,15 @@
   --foreground-rgb: 0, 0, 0;
   --toast-bg: white; /* Light mode background */
   --toast-text: black; /* Light mode text */
+  --scrollbar-thumb: #888;
+  --scrollbar-track: #f0f0f0;
 }
 
 .dark {
   --toast-bg: #1f2937; /* Dark mode background (gray-800) */
   --toast-text: white; /* Dark mode text */
+  --scrollbar-thumb: #555;
+  --scrollbar-track: #333;
 }
 
 body {
@@ -33,7 +37,6 @@ img {
   transition: none !important;
 }
 
-
 /* Global styles for read-only input fields */
 input.read-only {
   background-color: var(--readonly-bg-color);
@@ -45,4 +48,27 @@ input.read-only {
   background-color: var(--toast-bg);
   color: var(--toast-text);
   /* Add any additional styles you want for the toast */
+}
+
+.custom-scrollbar-sidebar {
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); /* Thumb and track color */
+}
+
+.custom-scrollbar-sidebar::-webkit-scrollbar {
+  width: 4px; /* Width of the scrollbar */
+}
+
+.custom-scrollbar-sidebar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track); /* Background of the scrollbar track */
+}
+
+.custom-scrollbar-sidebar::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb); /* Color of the scrollbar thumb */
+  border-radius: 10px; /* Roundness of the scrollbar thumb */
+  border: 1px solid var(--scrollbar-track); /* Optional: border around the thumb */
+}
+
+.custom-scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+  background: darken(var(--scrollbar-thumb), 10%); /* Darken on hover */
 }
