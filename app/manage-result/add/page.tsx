@@ -23,7 +23,7 @@ export default function AddResultPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-    // Define Zod schema for form validation
+    // Define Zod schema for form validation with conditional validation
     const resultFormSchema = z.object({
         examDate: z.string().nonempty("Exam date is required"),
         classId: z.string().nonempty("Class is required"),
@@ -36,8 +36,9 @@ export default function AddResultPage() {
 
     type FormData = z.infer<typeof resultFormSchema>;
 
-    const { register, handleSubmit, formState: { errors: formErrors }, setValue } = useForm<FormData>({
+    const { register, handleSubmit, formState: { errors: formErrors, touchedFields }, setValue, trigger } = useForm<FormData>({
         resolver: zodResolver(resultFormSchema),
+        mode: "onTouched"
     });
 
     useEffect(() => {
@@ -91,7 +92,12 @@ export default function AddResultPage() {
         } else {
             setSubjectOptions([]);
             setSubjectId('');
+            setValue("subjectId", "");
+            setSelectedStaffId('');
+            setValue("selectedStaffId", "");
+            setStaffs([]);
             setStudents([]);
+            setResults([]);
         }
     }, [classId, sectionId, setValue]);
 
@@ -142,6 +148,8 @@ export default function AddResultPage() {
             setValue("subjectId", subjectId);
         } else {
             setStaffs([]);
+            setSelectedStaffId('');
+            setValue("selectedStaffId", "");
         }
     }, [subjectId, setValue]);
 
@@ -170,18 +178,40 @@ export default function AddResultPage() {
         }
     };
 
+    // Add this function to check and clear field errors
+    const clearFieldError = (field: string, value: any) => {
+        if (formErrors[field as keyof typeof formErrors] && value) {
+            // Clear the error for this field
+            const updatedErrors = { ...formErrors };
+            delete updatedErrors[field as keyof typeof formErrors];
+            // This is a workaround since we can't directly modify formErrors
+            // We're updating the form state to trigger a re-render
+            setValue(field as any, value, { 
+                shouldValidate: true,
+                shouldDirty: true
+            });
+        }
+    };
+
     const handleMarksChange = (studentId: string, marks: number | null) => {
+        // Validate that marks don't exceed total marks
+        if (marks !== null && totalMarks !== null && marks > totalMarks) {
+            toast.error(`Marks cannot exceed total marks (${totalMarks})`);
+            return;
+        }
+        
+        // Clear error for this student when valid marks are added
+        if (marks !== null || errors[studentId]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[studentId];
+                return newErrors;
+            });
+        }
+        
         setResults((prevResults) => {
             const existingResult = prevResults.find(result => result.studentId === studentId);
             if (existingResult) {
-                // Clear error when marks are added
-                if (marks !== null) {
-                    setErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors[studentId];
-                        return newErrors;
-                    });
-                }
                 return prevResults.map(result =>
                     result.studentId === studentId ? { ...result, marks } : result
                 );
@@ -192,20 +222,20 @@ export default function AddResultPage() {
     };
 
     const handleAttendanceChange = (studentId: string, present: boolean) => {
-        setResults((prevResults) => {
-            const existingResult = prevResults.find(result => result.studentId === studentId);
-
-            // Clear error when attendance is marked
+        // Clear error for this student when attendance is marked
+        if (errors[studentId]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors[studentId];
                 return newErrors;
             });
-
+        }
+        
+        setResults((prevResults) => {
+            const existingResult = prevResults.find(result => result.studentId === studentId);
             if (existingResult) {
                 // If marking as absent, clear the marks
                 const marks = present ? existingResult.marks : null;
-
                 return prevResults.map(result =>
                     result.studentId === studentId ? { ...result, present, marks } : result
                 );
@@ -219,12 +249,12 @@ export default function AddResultPage() {
         const newTotalMarks = value ? parseInt(value) : null;
         setTotalMarks(newTotalMarks);
         setValue("totalMarks", value as unknown as number); // Type assertion to fix type error
+        clearFieldError("totalMarks", value);
         
         // Reset passing marks if it's greater than the new total marks or if total marks is cleared
         if (passingMarks !== null && (newTotalMarks === null || newTotalMarks < passingMarks)) {
             setPassingMarks(null);
-            setValue("passingMarks", value as unknown as number); // Type assertion to fix type error
-
+            setValue("passingMarks", "" as unknown as number); // Clear the passing marks field
         }
     };
 
@@ -243,25 +273,50 @@ export default function AddResultPage() {
     };
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
-        // Validate student records
+        // Custom validation for student records
         const newErrors: { [key: string]: string } = {};
         let hasErrors = false;
         
-        students.forEach(student => {
-            const result = results.find(r => r.studentId === student.id);
-            if (!result) {
-                newErrors[student.id] = "Please mark attendance or enter marks";
-                hasErrors = true;
-            } else if (!result.present && result.marks === null) {
-                newErrors[student.id] = "Please mark attendance or enter marks";
-                hasErrors = true;
-            }
-        });
+        // Only validate student records if they are visible
+        if (students.length > 0 && !isLoading && classId && sectionId) {
+            students.forEach(student => {
+                const result = results.find(r => r.studentId === student.id);
+                if (!result) {
+                    newErrors[student.id] = "Please mark attendance or enter marks";
+                    hasErrors = true;
+                } else if (result.present && result.marks === null) {
+                    // Only require marks for present students
+                    newErrors[student.id] = "Please enter marks for present student";
+                    hasErrors = true;
+                } else if (result.present && result.marks !== null && data.totalMarks && result.marks > data.totalMarks) {
+                    // Validate marks don't exceed total marks
+                    newErrors[student.id] = `Marks cannot exceed total marks (${data.totalMarks})`;
+                    hasErrors = true;
+                }
+            });
+        }
         
         setErrors(newErrors);
         
         if (hasErrors) {
-            toast.error("Please complete all student records");
+            toast.error("Please correct all errors before submitting");
+            return;
+        }
+
+        // Skip validation for fields that should be disabled based on conditions
+        if (!subjectId) {
+            // Don't validate teacher selection if no subject is selected
+            delete formErrors.selectedStaffId;
+        }
+        
+        if (!totalMarks) {
+            // Don't validate passing marks if no total marks are selected
+            delete formErrors.passingMarks;
+        }
+
+        // Check if there are any remaining form errors
+        if (Object.keys(formErrors).length > 0) {
+            toast.error("Please fill in all required fields");
             return;
         }
 
@@ -310,8 +365,10 @@ export default function AddResultPage() {
                                     className={`input input-bordered w-full bg-base-100 text-base-content ${formErrors.examDate ? 'input-error' : ''}`}
                                     {...register("examDate")}
                                     onChange={(e) => {
-                                        setExamDate(e.target.value);
-                                        setValue("examDate", e.target.value);
+                                        const value = e.target.value;
+                                        setExamDate(value);
+                                        setValue("examDate", value);
+                                        clearFieldError("examDate", value);
                                     }}
                                 />
                                 {formErrors.examDate && (
@@ -328,8 +385,15 @@ export default function AddResultPage() {
                                     className={`select select-bordered w-full bg-base-100 text-base-content ${formErrors.classId ? 'select-error' : ''}`}
                                     {...register("classId")}
                                     onChange={(e) => {
-                                        setClassId(e.target.value);
-                                        setValue("classId", e.target.value);
+                                        const value = e.target.value;
+                                        // Reset dependent fields when class changes
+                                        setSubjectId('');
+                                        setValue("subjectId", "");
+                                        setSelectedStaffId('');
+                                        setValue("selectedStaffId", "");
+                                        setClassId(value);
+                                        setValue("classId", value);
+                                        clearFieldError("classId", value);
                                     }}
                                     disabled={isLoading}
                                 >
@@ -354,12 +418,19 @@ export default function AddResultPage() {
                                     className={`select select-bordered w-full bg-base-100 text-base-content ${formErrors.sectionId ? 'select-error' : ''}`}
                                     {...register("sectionId")}
                                     onChange={(e) => {
-                                        setSectionId(e.target.value);
-                                        setValue("sectionId", e.target.value);
+                                        const value = e.target.value;
+                                        // Reset dependent fields when section changes
+                                        setSubjectId('');
+                                        setValue("subjectId", "");
+                                        setSelectedStaffId('');
+                                        setValue("selectedStaffId", "");
+                                        setSectionId(value);
+                                        setValue("sectionId", value);
+                                        clearFieldError("sectionId", value);
                                     }}
                                     disabled={isLoading}
                                 >
-                                    <option value="" >Select Section</option>
+                                    <option value="">Select Section</option>
                                     {sectionOptions.map((option) => (
                                         <option key={option._id} value={option._id}>
                                             {option.section}
@@ -376,22 +447,31 @@ export default function AddResultPage() {
                                 <label className="label">
                                     <span className="label-text text-base-content">Subject</span>
                                 </label>
-                                <select
-                                    className={`select select-bordered w-full bg-base-100 text-base-content ${formErrors.subjectId ? 'select-error' : ''}`}
-                                    {...register("subjectId")}
-                                    onChange={(e) => {
-                                        setSubjectId(e.target.value);
-                                        setValue("subjectId", e.target.value);
-                                    }}
-                                    disabled={isLoading || !classId || !sectionId}
-                                >
-                                    <option value="">Select Subject</option>
-                                    {subjectOptions.map((option) => (
-                                        <option key={option._id} value={option._id}>
-                                            {option.subject}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        className={`select select-bordered w-full bg-base-100 text-base-content ${formErrors.subjectId ? 'select-error' : ''}`}
+                                        {...register("subjectId")}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setSubjectId(value);
+                                            setValue("subjectId", value);
+                                            clearFieldError("subjectId", value);
+                                        }}
+                                        disabled={!classId || !sectionId}
+                                    >
+                                        <option value="">Select Subject</option>
+                                        {subjectOptions.map((option) => (
+                                            <option key={option._id} value={option._id}>
+                                                {option.subject}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {isLoading && classId && sectionId && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <span className="loading loading-spinner loading-sm text-primary"></span>
+                                        </div>
+                                    )}
+                                </div>
                                 {formErrors.subjectId && (
                                     <label className="label">
                                         <span className="label-text-alt text-error">{formErrors.subjectId.message}</span>
@@ -406,10 +486,12 @@ export default function AddResultPage() {
                                     className={`select select-bordered w-full bg-base-100 text-base-content ${formErrors.selectedStaffId ? 'select-error' : ''}`}
                                     {...register("selectedStaffId")}
                                     onChange={(e) => {
-                                        setSelectedStaffId(e.target.value);
-                                        setValue("selectedStaffId", e.target.value);
+                                        const value = e.target.value;
+                                        setSelectedStaffId(value);
+                                        setValue("selectedStaffId", value);
+                                        clearFieldError("selectedStaffId", value);
                                     }}
-                                    disabled={isLoading || staffs.length === 0}
+                                    disabled={staffs.length === 0}
                                 >
                                     <option value="">Select Teacher</option>
                                     {staffs.map((staff) => (
@@ -432,7 +514,11 @@ export default function AddResultPage() {
                                     className={`select select-bordered w-full bg-base-100 text-base-content ${formErrors.totalMarks ? 'select-error' : ''}`}
                                     {...register("totalMarks")}
                                     value={totalMarks?.toString() || ''}
-                                    onChange={(e) => handleTotalMarksChange(e.target.value)}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        handleTotalMarksChange(value);
+                                        clearFieldError("totalMarks", value);
+                                    }}
                                 >
                                     <option value="">Select Total Marks</option>
                                     <option value="25">25</option>
@@ -456,7 +542,8 @@ export default function AddResultPage() {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         setPassingMarks(value ? parseInt(value) : null);
-                                        setValue("passingMarks", value as unknown as number); // Type assertion to fix type error
+                                        setValue("passingMarks", value as unknown as number);
+                                        clearFieldError("passingMarks", value);
                                     }}
                                     disabled={totalMarks === null}
                                 >
@@ -474,10 +561,9 @@ export default function AddResultPage() {
                                 )}
                             </div>
                         </div>
-                        <div className="mt-6">
-                            <h3 className="text-xl font-bold mb-4 text-base-content">Students</h3>
-
-                            {students.length > 0 ? (
+                        {classId && sectionId && !isLoading && students.length > 0 ? (
+                            <div className="mt-6">
+                                <h2 className="text-xl font-bold mb-4 text-base-content">Students</h2>
                                 <div className="overflow-x-auto">
                                     <table className="table w-full">
                                         <thead>
@@ -542,12 +628,23 @@ export default function AddResultPage() {
                                         </tbody>
                                     </table>
                                 </div>
-                            ) : (
-                                <div className="alert alert-info">
-                                    <span className="text-info-content">No students found. Please select a class and section.</span>
+                            </div>
+                        ) : classId && sectionId && !isLoading ? (
+                            <div className="mt-6">
+                                <h3 className="text-xl font-bold mb-4 text-base-content">Students</h3>
+                                <div className="flex justify-center items-center py-8">
+                                    <p className="text-lg font-medium text-base-content">No students found for the selected class and section.</p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        ) : isLoading && classId && sectionId ? (
+                            <div className="mt-6">
+                                <h3 className="text-xl font-bold mb-4 text-base-content">Students</h3>
+                                <div className="flex justify-center items-center py-8">
+                                    <span className="loading loading-spinner loading-lg text-primary"></span>
+                                    <span className="ml-3 text-base-content">Loading students...</span>
+                                </div>
+                            </div>
+                        ) : null}
                         <div className="flex justify-end gap-4 mt-6">
                             <button 
                                 type="button" 
