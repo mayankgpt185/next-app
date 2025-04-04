@@ -193,7 +193,13 @@ export default function ViewLeavePage() {
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-base-content">{application.status}</span>
+                                                    application.status === 'Approved' ? (
+                                                        <span className="badge badge-success text-white">Approved</span>
+                                                    ) : application.status === 'Cancelled' ? (
+                                                        <span className="badge badge-error text-white">Cancelled</span>
+                                                    ) : (
+                                                        <span className="badge badge-warning text-white">{application.status}</span>
+                                                    )
                                                 )}
                                             </td>
                                         </tr>
