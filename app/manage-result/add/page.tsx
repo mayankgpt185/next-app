@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { z } from 'zod';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/app/components/ui/button';
 
 export default function AddResultPage() {
     const [examDate, setExamDate] = useState('');
@@ -186,7 +187,7 @@ export default function AddResultPage() {
             delete updatedErrors[field as keyof typeof formErrors];
             // This is a workaround since we can't directly modify formErrors
             // We're updating the form state to trigger a re-render
-            setValue(field as any, value, { 
+            setValue(field as any, value, {
                 shouldValidate: true,
                 shouldDirty: true
             });
@@ -199,7 +200,7 @@ export default function AddResultPage() {
             toast.error(`Marks cannot exceed total marks (${totalMarks})`);
             return;
         }
-        
+
         // Clear error for this student when valid marks are added
         if (marks !== null || errors[studentId]) {
             setErrors(prev => {
@@ -208,7 +209,7 @@ export default function AddResultPage() {
                 return newErrors;
             });
         }
-        
+
         setResults((prevResults) => {
             const existingResult = prevResults.find(result => result.studentId === studentId);
             if (existingResult) {
@@ -230,7 +231,7 @@ export default function AddResultPage() {
                 return newErrors;
             });
         }
-        
+
         setResults((prevResults) => {
             const existingResult = prevResults.find(result => result.studentId === studentId);
             if (existingResult) {
@@ -250,7 +251,7 @@ export default function AddResultPage() {
         setTotalMarks(newTotalMarks);
         setValue("totalMarks", value as unknown as number); // Type assertion to fix type error
         clearFieldError("totalMarks", value);
-        
+
         // Reset passing marks if it's greater than the new total marks or if total marks is cleared
         if (passingMarks !== null && (newTotalMarks === null || newTotalMarks < passingMarks)) {
             setPassingMarks(null);
@@ -276,17 +277,17 @@ export default function AddResultPage() {
         // Custom validation for student records
         const newErrors: { [key: string]: string } = {};
         let hasErrors = false;
-        
+
         // Only validate student records if they are visible
         if (students.length > 0 && !isLoading && classId && sectionId) {
             students.forEach(student => {
                 const result = results.find(r => r.studentId === student.id);
                 if (!result) {
-                    newErrors[student.id] = "Please mark attendance or enter marks";
+                    newErrors[student.id] = "Please mark absent attendance or enter marks";
                     hasErrors = true;
                 } else if (result.present && result.marks === null) {
                     // Only require marks for present students
-                    newErrors[student.id] = "Please enter marks for present student";
+                    newErrors[student.id] = "Please enter marks";
                     hasErrors = true;
                 } else if (result.present && result.marks !== null && data.totalMarks && result.marks > data.totalMarks) {
                     // Validate marks don't exceed total marks
@@ -295,11 +296,11 @@ export default function AddResultPage() {
                 }
             });
         }
-        
+
         setErrors(newErrors);
-        
+
         if (hasErrors) {
-            toast.error("Please correct all errors before submitting");
+            toast.error("Please add attendance and marks for all students");
             return;
         }
 
@@ -308,7 +309,7 @@ export default function AddResultPage() {
             // Don't validate teacher selection if no subject is selected
             delete formErrors.selectedStaffId;
         }
-        
+
         if (!totalMarks) {
             // Don't validate passing marks if no total marks are selected
             delete formErrors.passingMarks;
@@ -646,19 +647,20 @@ export default function AddResultPage() {
                             </div>
                         ) : null}
                         <div className="flex justify-end gap-4 mt-6">
-                            <button 
-                                type="button" 
-                                className="btn btn-error btn-outline"
-                                onClick={() => window.history.back()}
+                            <Button
+                                type="button"
+                                variant="error"
+                                outline
                             >
                                 Cancel
-                            </button>
-                            <button 
-                                className="btn btn-primary btn-outline" 
+                            </Button>
+                            <Button
+                                variant="primary"
                                 type="submit"
+                                outline
                             >
-                                Submit Results
-                            </button>
+                                Add Results
+                            </Button>
                         </div>
                     </form>
                 </div>
