@@ -79,6 +79,13 @@ export async function GET(request: Request) {
     const attendanceDate = searchParams.get("attendanceDate");
     const classId = searchParams.get("classId");
 
+    if (!subjectId || !sectionId || !attendanceDate || !classId) {
+      return NextResponse.json(
+        { error: "Missing required parameters" },
+        { status: 400 }
+      );
+    }
+
     const attendance = await Attendance.find({
       subjectId: subjectId,
       classId: classId,

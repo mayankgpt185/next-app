@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { StudentMemberDTO } from '../api/dto/StudentMember';
 import toast from 'react-hot-toast';
+import { Button } from '../components/ui/button';
 
 export default function ViewAttendancePage() {
     const [subjects, setSubjects] = useState<{ _id: string, subject: string, class: string, section: string, courseId: { class: string, section: string } }[]>([]);
@@ -347,13 +348,15 @@ export default function ViewAttendancePage() {
                     </div>
 
                     <div className="flex justify-end mt-6">
-                        <button
-                            className="btn btn-primary"
+                        <Button
+                            type="button"
+                            variant="primary"
+                            outline
                             onClick={fetchAttendance}
                             disabled={!selectedClassSection || !selectedSubject || !attendanceDate}
                         >
                             View Attendance
-                        </button>
+                        </Button>
                     </div>
 
                     {/* Attendance Records Display */}
@@ -383,27 +386,33 @@ export default function ViewAttendancePage() {
                                             </div>
                                             {isEditing ? (
                                                 <div className="flex gap-2">
-                                                    <button 
-                                                        className="btn btn-success"
+                                                    <Button 
+                                                        type="button"
+                                                        variant="success"
+                                                        outline
                                                         onClick={saveAttendance}
                                                         disabled={!hasChanges}
                                                     >
                                                         Save Changes
-                                                    </button>
-                                                    <button 
-                                                        className="btn btn-error"
+                                                    </Button>
+                                                    <Button 
+                                                        type="button"
+                                                        variant="error"
+                                                        outline
                                                         onClick={() => setIsEditing(false)}
                                                     >
                                                         Cancel
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             ) : (
-                                                <button 
-                                                    className="btn btn-primary"
+                                                <Button 
+                                                    type="button"
+                                                    variant="primary"
+                                                    outline
                                                     onClick={toggleEditMode}
                                                 >
                                                     Edit Attendance
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
                                         <div className="overflow-y-auto h-[calc(100vh-280px)]">

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { StudentMemberDTO } from '../../api/dto/StudentMember';
 import toast from 'react-hot-toast';
+import { Button } from '@/app/components/ui/button';
 
 export default function AddLeavePage() {
     const [leaveFromDate, setLeaveFromDate] = useState('');
@@ -201,12 +202,14 @@ export default function AddLeavePage() {
                     </div>
 
                     <div className="flex justify-end mt-6">
-                        <button
-                            className="btn btn-primary"
+                        <Button
+                            type="button"
+                            variant="primary"
+                            outline
                             onClick={submitLeaveApplication}
                         >
                             Apply
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { StudentMemberDTO } from '../../api/dto/StudentMember';
 import toast from 'react-hot-toast';
+import { log } from 'console';
+import { Button } from '@/app/components/ui/button';
 
 export default function AttendanceAddPage() {
     const [subjects, setSubjects] = useState<{
@@ -17,7 +19,7 @@ export default function AttendanceAddPage() {
         uniqueId: string
     }[]>([]);
     const [staff, setStaff] = useState<StudentMemberDTO[]>([]);
-    const [students, setStudents] = useState<{ _id: string, name: string }[]>([]);
+    const [students, setStudents] = useState<any[]>([]);
     const [selectedYear, setSelectedYear] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
     const [selectedStaff, setSelectedStaff] = useState('');
@@ -25,7 +27,6 @@ export default function AttendanceAddPage() {
     const [attendanceData, setAttendanceData] = useState([]);
     const [academicYears, setAcademicYears] = useState<{ id: string, label: string, startDate: string, endDate: string }[]>([]);
     const [dateFieldTouched, setDateFieldTouched] = useState(false);
-    const studentRole = "STUDENT";
     const [isLoadingStaff, setIsLoadingStaff] = useState(false);
     const [isLoadingStudents, setIsLoadingStudents] = useState(false);
     const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
@@ -92,7 +93,7 @@ export default function AttendanceAddPage() {
                     // Find the class details from classesData using courseId.class
                     const classDetails = classesData.find((cls: any) => cls._id === subject.courseId.class);
                     const className = classDetails?.name || classDetails?.classNumber || '';
-                    
+
                     // Create separate entries for each section
                     return subject.sectionIds
                         .filter((section: any) => section.isActive)
@@ -163,7 +164,6 @@ export default function AttendanceAddPage() {
                 }
 
                 // Get the section ID from the subject details
-                // We need to use the section property from the subject, which matches the section in sectionIds
                 const sectionId = subjectDetails.sectionIds?.find(s => s.section === subjectDetails.section)?._id || '';
 
                 const studentClassesResponse = await fetch(`/api/student-class?classId=${subjectDetails.courseId.class}&sectionId=${sectionId}`);
@@ -172,23 +172,14 @@ export default function AttendanceAddPage() {
                 }
                 const studentClassesData = await studentClassesResponse.json();
 
-                const studentIds = studentClassesData.map((studentClass: any) => studentClass.studentId);
-
-                const studentsResponse = await fetch(`/api/manage-staff?role=${studentRole}`);
-                if (!studentsResponse.ok) {
-                    throw new Error('Failed to fetch students');
-                }
-                const studentsData = await studentsResponse.json();
-
-                const filteredStudents = studentsData.filter((student: any) => studentIds.includes(student._id));
-
-                const initialAttendance = filteredStudents.map((student: any) => ({
-                    studentId: student._id,
-                    name: student.firstName + " " + student.lastName,
+                const initialAttendance = studentClassesData.map((student: any) => ({
+                    studentId: student.studentId._id,
+                    name: student.studentId.firstName + " " + student.studentId.lastName,
                     present: true
                 }));
 
-                setStudents(filteredStudents);
+                console.log(studentClassesData);
+                setStudents(studentClassesData);
                 setAttendanceData(initialAttendance);
             } catch (error) {
                 console.error('Error fetching students:', error);
@@ -199,7 +190,7 @@ export default function AttendanceAddPage() {
         };
 
         fetchStudents();
-    }, [selectedSubject, subjects, studentRole]);
+    }, [selectedSubject, subjects]);
 
     // Handle attendance toggle
     const handleAttendanceChange = (studentId: string) => {
@@ -214,28 +205,35 @@ export default function AttendanceAddPage() {
 
     // Submit attendance
     const submitAttendance = async () => {
-        // Log the current state for debugging
-        console.log("Current staff state:", selectedStaff);
-
         if (!attendanceDate) {
             toast.error('Please select a date for attendance');
             return;
         }
 
-        // More robust check for staff selection
         if (!selectedStaff || selectedStaff === '') {
             toast.error('Please select a staff member');
             return;
         }
 
         try {
+            const subjectDetails = subjects.find(subject => subject.uniqueId === selectedSubject);
+            console.log(attendanceDate, subjectDetails?._id, selectedClassId, selectedSectionId);
+
+            // Check if attendance already exists for this date, subject, class and section
+            const checkResponse = await fetch(`/api/attendance?attendanceDate=${attendanceDate}&subjectId=${subjectDetails?._id}&classId=${selectedClassId}&sectionId=${selectedSectionId}`);
+            const checkData = await checkResponse.json();
+            console.log(checkData);
+
+            if (checkData.length > 0) {
+                toast.error('Attendance already recorded. Please select a different date, subject, class or section.');
+                return;
+            }
+
             // Format student attendance data according to the schema
             const formattedStudentAttendance = attendanceData.map((student: any) => ({
                 studentId: student.studentId,
                 status: student.present ? "P" : "A"
             }));
-
-            const subjectDetails = subjects.find(subject => subject.uniqueId === selectedSubject);
 
             // Create the payload with the correct format
             const payload = {
@@ -259,7 +257,18 @@ export default function AttendanceAddPage() {
 
             if (response.ok) {
                 toast.success('Attendance submitted successfully');
-                // Reset form or redirect as needed
+                // Reset all form fields
+                setSelectedYear('');
+                setSelectedSubject('');
+                setSelectedStaff('');
+                setAttendanceDate('');
+                setAttendanceData([]);
+                setStudents([]);
+                setSubjects([]);
+                setStaff([]);
+                setSelectedClassId('');
+                setSelectedSectionId('');
+                setDateFieldTouched(false);
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('Server error:', errorData);
@@ -287,7 +296,7 @@ export default function AttendanceAddPage() {
     const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedUniqueId = e.target.value;
         const subject = subjects.find(s => s.uniqueId === selectedUniqueId);
-        
+
         // Get the section ID that matches the selected section
         const sectionId = subject?.sectionIds.find(s => s.section === subject.section)?._id || '';
         const classId = subject?.courseId.class || '';
@@ -475,12 +484,13 @@ export default function AttendanceAddPage() {
                                 </div>
 
                                 <div className="flex justify-end mt-6">
-                                    <button
-                                        className="btn btn-primary"
+                                    <Button
+                                        variant="primary"
+                                        outline
                                         onClick={submitAttendance}
                                     >
                                         Submit Attendance
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )

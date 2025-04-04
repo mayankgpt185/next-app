@@ -77,6 +77,7 @@ export async function GET(request: Request) {
         .where({ isActive: true })
         .populate("class")
         .populate("section")
+        .populate("studentId")
         .select("-__v");
 
       return NextResponse.json(studentClass);
