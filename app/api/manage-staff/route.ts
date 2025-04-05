@@ -9,9 +9,23 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: body.email });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "Email already exists. Please use a different email address." },
+        { status: 400 }
+      );
+    }
+
     // Hash the password
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
+    let academicYearId = null;
+    if (body.academicYearId) {
+      academicYearId = body.academicYearId;
+    }
+    
     // Create new user with hashed password
     const userData = {
       firstName: body.firstName,
@@ -21,6 +35,7 @@ export async function POST(request: Request) {
       address: body.address,
       role: body.role,
       dateJoined: body.dateJoined,
+      academicYearId: academicYearId,
     };
 
     const user = await User.create(userData);

@@ -19,6 +19,12 @@ interface Section {
   section: string;
 }
 
+interface AcademicYear {
+  _id: string;
+  startDate: string;
+  endDate: string;
+}
+
 const formSchema = (isUpdate: boolean) => z.object({
   firstName: z.string()
     .nonempty("First name is required")
@@ -51,6 +57,8 @@ export default function AddStudentPage() {
   const isUpdate = !!id; // If `id` exists, it's an update, otherwise it's a new user
   const [classes, setClasses] = useState<Class[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
 
@@ -113,8 +121,33 @@ export default function AddStudentPage() {
       }
     };
 
+    const fetchAcademicYears = async () => {
+      try {
+        const response = await fetch('/api/session');
+        if (!response.ok) {
+          throw new Error('Failed to fetch academic years');
+        }
+        const data = await response.json();
+        
+        setAcademicYears(data);
+        
+        if (data.length > 0) {
+          // Sort by startDate in descending order
+          const sortedYears = [...data].sort((a, b) => 
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          );
+          
+          setSelectedAcademicYearId(sortedYears[0]._id);
+        }
+      } catch (error) {
+        console.error('Error fetching academic years:', error);
+        toast.error('Failed to load academic years');
+      }
+    };
+
     // Call fetchData to start the data loading process
     fetchData();
+    fetchAcademicYears();
   }, [id, setValue]);
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
@@ -122,7 +155,8 @@ export default function AddStudentPage() {
     const method = id ? 'PUT' : 'POST';
     const userData = id ? { ...data, id } : {
       ...data,
-      role: studentRole
+      role: studentRole,
+      academicYearId: [selectedAcademicYearId]
     };
     const response = await fetch(`/api/manage-staff${id ? `?id=${id}` : ''}`, {
 

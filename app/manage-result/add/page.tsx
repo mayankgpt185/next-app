@@ -7,6 +7,13 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/app/components/ui/button';
 
+// Add this interface at the top with your other interfaces
+interface AcademicYear {
+    _id: string;
+    startDate: string;
+    endDate: string;
+}
+
 export default function AddResultPage() {
     const [examDate, setExamDate] = useState('');
     const [classId, setClassId] = useState('');
@@ -23,6 +30,10 @@ export default function AddResultPage() {
     const [sectionOptions, setSectionOptions] = useState<{ _id: string, section: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState('');
+    const [academicYearStart, setAcademicYearStart] = useState<string>('');
+    const [academicYearEnd, setAcademicYearEnd] = useState<string>('');
 
     // Define Zod schema for form validation with conditional validation
     const resultFormSchema = z.object({
@@ -384,6 +395,44 @@ export default function AddResultPage() {
         }
     };
 
+    useEffect(() => {
+        const fetchAcademicYears = async () => {
+            try {
+                const response = await fetch('/api/session');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch academic years');
+                }
+                const data = await response.json();
+                
+                setAcademicYears(data);
+                
+                if (data.length > 0) {
+                    // Sort by startDate in descending order
+                    const sortedYears = [...data].sort((a, b) => 
+                        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+                    );
+                    
+                    const latestYear = sortedYears[0];
+                    setSelectedAcademicYearId(latestYear._id);
+                    
+                    const startDate = new Date(latestYear.startDate);
+                    const endDate = new Date(latestYear.endDate);
+                    
+                    const formattedStartDate = startDate.toISOString().split('T')[0];
+                    const formattedEndDate = endDate.toISOString().split('T')[0];
+                    
+                    setAcademicYearStart(formattedStartDate);
+                    setAcademicYearEnd(formattedEndDate);
+                }
+            } catch (error) {
+                console.error('Error fetching academic years:', error);
+                toast.error('Failed to load academic years');
+            }
+        };
+
+        fetchAcademicYears();
+    }, []);
+
     return (
         <div className="flex flex-col w-full p-6 bg-base-100 min-h-screen font-sans">
             <div className="card bg-base-200 shadow-xl">
@@ -397,6 +446,8 @@ export default function AddResultPage() {
                                 </label>
                                 <input
                                     type="date"
+                                    min={academicYearStart}
+                                    max={academicYearEnd}
                                     className={`input input-bordered w-full bg-base-100 text-base-content ${formErrors.examDate ? 'input-error' : ''}`}
                                     {...register("examDate")}
                                     onChange={(e) => {

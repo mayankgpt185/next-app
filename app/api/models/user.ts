@@ -7,6 +7,7 @@ export interface IUser extends Document {
   lastName: string;
   address: string;
   role: string;
+  academicYearId: string[];
   dateJoined: Date;
   lastLogin: Date;
   isActive: boolean;
@@ -19,6 +20,7 @@ const userSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   address: { type: String, required: true },
   role: { type: String, required: true },
+  academicYearId: [{ type: mongoose.Schema.Types.ObjectId, ref: "sessions", required: false }],
   dateJoined: { type: Date, required: true },
   lastLogin: { type: Date, required: false },
   isActive: { type: Boolean, default: true }
