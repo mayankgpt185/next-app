@@ -37,7 +37,7 @@ export default function AddResultPage() {
 
     type FormData = z.infer<typeof resultFormSchema>;
 
-    const { register, handleSubmit, formState: { errors: formErrors, touchedFields }, setValue, trigger } = useForm<FormData>({
+    const { register, handleSubmit, formState: { errors: formErrors, touchedFields }, setValue, trigger, reset } = useForm<FormData>({
         resolver: zodResolver(resultFormSchema),
         mode: "onTouched"
     });
@@ -322,7 +322,8 @@ export default function AddResultPage() {
         }
 
         try {
-            const response = await fetch('/api/results', {
+            console.log(results);
+            const response = await fetch('/api/manage-result', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -339,11 +340,44 @@ export default function AddResultPage() {
                 }),
             });
 
+            const responseData = await response.json();
+
             if (!response.ok) {
-                throw new Error('Failed to add results');
+                if (response.status === 409) {
+                    // Handle the duplicate entry error
+                    toast.error(responseData.error || 'A result for this combination already exists');
+                } else {
+                    throw new Error(responseData.error || 'Failed to add results');
+                }
+                return;
             }
 
             toast.success('Results added successfully');
+            
+            // Reset form after successful submission
+            setExamDate('');
+            setClassId('');
+            setSectionId('');
+            setSubjectId('');
+            setSubjectOptions([]);
+            setStaffs([]);
+            setSelectedStaffId('');
+            setTotalMarks(null);
+            setPassingMarks(null);
+            setStudents([]);
+            setResults([]);
+            
+            // Reset form fields using react-hook-form reset
+            reset({
+                examDate: '',
+                classId: '',
+                sectionId: '',
+                subjectId: '',
+                selectedStaffId: '',
+                totalMarks: '' as unknown as number,
+                passingMarks: '' as unknown as number
+            });
+            
         } catch (error) {
             console.error('Error adding results:', error);
             toast.error('Failed to add results');

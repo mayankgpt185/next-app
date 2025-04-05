@@ -6,24 +6,28 @@ export async function POST(request: Request) {
   try {
     await dbConnect();
     const data = await request.json();
-
-    const result = await Result.create({
-      staffId: data.staffId,
-      studentId: data.studentId,
-      subjectId: data.subjectId,
+    
+    // Check if a result with the same criteria already exists
+    const existingResult = await Result.findOne({
       examDate: data.examDate,
-      examType: data.examType,
-      marks: data.marks,
-      totalMarks: data.totalMarks,
-      grade: data.grade,
-      percentage: data.percentage,
-      resultStatus: data.resultStatus,
-      attendanceStatus: data.attendanceStatus,
+      classId: data.classId,
+      sectionId: data.sectionId,
+      subjectId: data.subjectId
     });
+    
+    if (existingResult) {
+      return NextResponse.json(
+        { error: "A result for this exam date, class, section, and subject already exists" },
+        { status: 409 }
+      );
+    }
+    
+    // Create the result document with the proper structure
+    const result = await Result.create(data);
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error in POST /api/result:", error);
+    console.error("Error in POST /api/manage-result:", error);
     return NextResponse.json(
       { error: "Failed to create result" },
       { status: 500 }

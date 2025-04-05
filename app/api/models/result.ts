@@ -1,17 +1,19 @@
 import mongoose from "mongoose";
 
 export interface IResult extends Document {
-    staffId: string;
-    studentId: string;
-    subjectId: string;
     examDate: string;
-    examType: string;
-    marks: number;
+    classId: string;
+    sectionId: string;
+    subjectId: string;
+    staffId: string;
     totalMarks: number;
-    grade: string;
-    percentage: number;
-    resultStatus: string;
-    attendanceStatus: string;
+    results: {
+        studentId: string;
+        marks: number | null;
+        grade: string | null;
+        percentage: number | null;
+        present: boolean;
+    }[];
     isActive: boolean;
     addedDate: Date;
     modifiedDate: Date;
@@ -19,16 +21,19 @@ export interface IResult extends Document {
   
 const ResultSchema = new mongoose.Schema(
   {
-    staffId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
-    studentId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
-    subjectId: { type: mongoose.Schema.Types.ObjectId, ref: "subjects", required: true },
     examDate: { type: Date, required: true },
-    examTime: { type: String, required: true },
-    examLocation: { type: String, required: true },
-    examDuration: { type: String, required: true },
-    examType: { type: String, required: true },
-    resultStatus: { type: String, required: true },
-    attendanceStatus: { type: String, required: true },
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "classes", required: true },
+    sectionId: { type: mongoose.Schema.Types.ObjectId, ref: "sections", required: true },
+    subjectId: { type: mongoose.Schema.Types.ObjectId, ref: "subjects", required: true },
+    staffId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+    totalMarks: { type: Number, required: true },
+    results: [{
+      studentId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+      marks: { type: Number, default: null },
+      grade: { type: String, required: false, default: null },
+      percentage: { type: Number, required: false, default: null },
+      present: { type: Boolean, required: true },
+    }],
     isActive: { type: Boolean, default: true },
     addedDate: { type: Date, default: Date.now },
     modifiedDate: { type: Date },
