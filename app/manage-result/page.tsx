@@ -23,20 +23,26 @@ interface Student {
 
 interface Teacher {
     _id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
+}
+
+interface Subject {
+    _id: string;
+    subject: string;
 }
 
 interface Result {
     _id: string;
     examDate: string;
-    subject: string;
+    subjectId: string;
     totalMarks: number;
     passingMarks: number;
     studentMarks: number | null;
     percentage: number | null;
     grade: string | null;
     present: boolean;
-    teacherName: string;
+    staffId: string;
 }
 
 interface AcademicYear {
@@ -58,6 +64,8 @@ const ViewResults = () => {
     const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState('');
     const [hasFetchedResults, setHasFetchedResults] = useState(false);
+    const [subjects, setSubjects] = useState<Subject[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
 
     // Fetch classes on component mount
     useEffect(() => {
@@ -175,6 +183,40 @@ const ViewResults = () => {
         fetchAcademicYears();
     }, []);
 
+    // Add function to fetch subjects
+    const fetchSubjects = async () => {
+        try {
+            const response = await fetch('/api/manage-subject');
+            if (!response.ok) {
+                throw new Error('Failed to fetch subjects');
+            }
+            const data = await response.json();
+            setSubjects(data);
+        } catch (error) {
+            console.error('Error fetching subjects:', error);
+        }
+    };
+
+    // Add function to fetch teachers
+    const fetchTeachers = async () => {
+        try {
+            const response = await fetch('/api/manage-staff?role=STAFF');
+            if (!response.ok) {
+                throw new Error('Failed to fetch teachers');
+            }
+            const data = await response.json();
+            setTeachers(data);
+        } catch (error) {
+            console.error('Error fetching teachers:', error);
+        }
+    };
+
+    // Fetch subjects and teachers on component mount
+    useEffect(() => {
+        fetchSubjects();
+        fetchTeachers();
+    }, []);
+
     const handleUserTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value as 'student' | 'teacher' | '';
         setUserType(value);
@@ -200,7 +242,7 @@ const ViewResults = () => {
         setHasFetchedResults(false);
     };
 
-    // Add a function to fetch results on button click
+    // Modify the fetchResults function to also ensure we have subjects and teachers
     const fetchResults = async () => {
         if (!selectedStudentId || !selectedClassId || !selectedSectionId) {
             toast.error('Please select class, section, and student first');
@@ -225,12 +267,31 @@ const ViewResults = () => {
             const data = await response.json();
             console.log(data);
             setResults(data);
+            
+            // Ensure we have the latest subjects and teachers
+            if (subjects.length === 0) {
+                await fetchSubjects();
+            }
+            if (teachers.length === 0) {
+                await fetchTeachers();
+            }
         } catch (error) {
             console.error('Error fetching results:', error);
             toast.error('Failed to load results');
         } finally {
             setIsLoading(false);
         }
+    };
+    
+    // Add helper functions to get names from IDs
+    const getSubjectName = (subjectId: string) => {
+        const subject = subjects.find(s => s._id === subjectId);
+        return subject ? subject.subject : subjectId;
+    };
+    
+    const getTeacherName = (teacherId: string) => {
+        const teacher = teachers.find(t => t._id === teacherId);
+        return teacher ? teacher.firstName + " " + teacher.lastName : teacherId;
     };
 
     return (
@@ -373,8 +434,8 @@ const ViewResults = () => {
                                     {results.map((result, index) => (
                                         <tr key={index} className="text-base-content">
                                             <td>{new Date(result.examDate).toLocaleDateString()}</td>
-                                            <td>{result.subject}</td>
-                                            <td>{result.teacherName}</td>
+                                            <td>{getSubjectName(result.subjectId)}</td>
+                                            <td>{getTeacherName(result.staffId)}</td>
                                             <td>{result.totalMarks}</td>
                                             <td>{result.passingMarks}</td>
                                             <td>{result.present ? 'Present' : 'Absent'}</td>
