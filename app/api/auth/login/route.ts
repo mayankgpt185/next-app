@@ -1,9 +1,13 @@
+'use server'
+
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import dbConnect from "../../../../lib/mongodb"; // Adjust the import path as needed
 import User from "../../models/user";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
+import { createToken, verifyToken } from '@/lib/auth';
+import { UserRole } from '@/lib/role';
 
 export async function POST(request: Request) {
   try {
@@ -39,36 +43,59 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create JWT token
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const token = await new SignJWT({
+    console.log('Existing user:', existingUser);
+    // Create the token
+    const token = await createToken({
       id: existingUser._id.toString(),
       email: existingUser.email,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("24h")
-      .sign(secret);      
-
-    // Set cookie
-    (await cookies()).set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 86400, // 24 hours
-      path: "/",
+      role: existingUser.role as UserRole,
+      name: existingUser.firstName + " " + existingUser.lastName
     });
 
-    const { password: _, ...userWithoutPassword } = existingUser;
+    // Convert Mongoose document to a plain object
+    const userObject = existingUser.toObject ? 
+      existingUser.toObject() : 
+      JSON.parse(JSON.stringify(existingUser));
+    
+    // Remove password from the user object
+    const { password: _, ...userWithoutPassword } = userObject;
 
+    // Return token in the response body instead of setting a cookie
     return NextResponse.json({
       user: userWithoutPassword,
+      token: token,
       message: "Login successful",
     });
 
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json(
-      { error: "An error occurred while creating the user" },
+      { error: "An error occurred while authenticating the user" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userData = await verifyToken(token);
+    
+    if (!userData) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    return NextResponse.json({ user: userData });
+  } catch (error) {
+    console.error("Error:", error);
+    return NextResponse.json(
+      { error: "An error occurred while fetching user data" },
       { status: 500 }
     );
   }

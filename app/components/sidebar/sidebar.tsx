@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../ui/card';
 import { useRouter } from 'next/navigation';
 import { useSidebarStore } from '../store/useSidebarStore';
+import { UserRole, roleAccess } from '@/lib/role';
 const lucideReact = require('lucide-react');
 
 const Sidebar = () => {
@@ -12,13 +13,39 @@ const Sidebar = () => {
   const [currentPath, setCurrentPath] = useState('');
   const [showScrollUp, setShowScrollUp] = useState(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Initialize theme state
     setCurrentTheme(document.documentElement.getAttribute('data-theme') as 'light' | 'dark' || 'light');
     setCurrentPath(window.location.pathname);
+    
+    // Get data from localStorage (safely, in case of SSR)
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('token');
+      const storedRole = localStorage.getItem('userRole');
+      const storedEmail = localStorage.getItem('userEmail');
+      const storedName = localStorage.getItem('name');
+      setToken(storedToken);
+      setUserRole(storedRole as UserRole);
+      setUserEmail(storedEmail);
+      setUserName(storedName);
+    }
   }, []);
+
+  // Function to check if a user can access a route
+  const canAccessRoute = (route: string): boolean => {
+    if (!userRole) return false;
+    
+    const userRoleAccess = roleAccess.find(access => access.role === userRole);
+    if (!userRoleAccess) return false;
+    
+    return userRoleAccess.routes.includes(route);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -96,106 +123,135 @@ const Sidebar = () => {
             </div>
           )}
           <div ref={scrollRef} className="flex flex-col space-y-2 overflow-y-auto custom-scrollbar-sidebar h-full">
-            <div className="tooltip tooltip-right" data-tip="Manage Staff">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-staff' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-staff')}
-                title={!isExpanded ? "Manage Staff" : ""}
-              >
-                <lucideReact.Users className="w-5 h-5 text-primary" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Staff</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="Manage Student">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-student' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-student')}
-                title={!isExpanded ? "Manage Student" : ""}
-              >
-                <lucideReact.Contact className="w-5 h-5 text-success" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Student</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="Manage Course">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-course' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-course')}
-                title={!isExpanded ? "Manage Course" : ""}
-              >
-                <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Course</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="Manage Subject">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-subject' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-subject')}
-                title={!isExpanded ? "Manage Subject" : ""}
-              >
-                <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Subject</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="Take Attendance">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/attendance/add' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/attendance/add')}
-                title={!isExpanded ? "Take Attendance" : ""}
-              >
-                <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">Take Attendance</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="View Attendance">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/attendance' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/attendance')}
-                title={!isExpanded ? "View Attendance" : ""}
-              >
-                <lucideReact.FileChartLine className="w-5 h-5 text-info" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">View Attendance</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="Apply Leave">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-leave/add' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-leave/add')}
-                title={!isExpanded ? "Apply Leave" : ""}
-              >
-                <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">Apply Leave</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="View Leave">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-leave' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-leave')}
-                title={!isExpanded ? "View Leave" : ""}
-              >
-                <lucideReact.Sticker className="w-5 h-5 text-error" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">View Leave</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="Add Result">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-result/add' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-result/add')}
-                title={!isExpanded ? "Add Result" : ""}
-              >
-                <lucideReact.FilePenLine className="w-5 h-5 text-emerald-500" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">Add Result</span>}
-              </button>
-            </div>
-            <div className="tooltip tooltip-right" data-tip="View Result">
-              <button
-                className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-result' ? 'btn-active' : ''}`}
-                onClick={() => handleNavigation('/manage-result')}
-                title={!isExpanded ? "View Result" : ""}
-              >
-                <lucideReact.FileChartColumn className="w-5 h-5 text-purple-500" />
-                {isExpanded && <span className="ml-2 text-base-content font-medium">View Result</span>}
-              </button>
-            </div>
+            {canAccessRoute('/manage-staff') && (
+              <div className="tooltip tooltip-right" data-tip="Manage Staff">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-staff' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-staff')}
+                  title={!isExpanded ? "Manage Staff" : ""}
+                >
+                  <lucideReact.Users className="w-5 h-5 text-primary" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Staff</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/manage-student') && (
+              <div className="tooltip tooltip-right" data-tip="Manage Student">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-student' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-student')}
+                  title={!isExpanded ? "Manage Student" : ""}
+                >
+                  <lucideReact.Contact className="w-5 h-5 text-success" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Student</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/manage-course') && (
+              <div className="tooltip tooltip-right" data-tip="Manage Course">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-course' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-course')}
+                  title={!isExpanded ? "Manage Course" : ""}
+                >
+                  <lucideReact.NotebookTabs className="w-5 h-5 text-accent" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Course</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/manage-subject') && (
+              <div className="tooltip tooltip-right" data-tip="Manage Subject">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-subject' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-subject')}
+                  title={!isExpanded ? "Manage Subject" : ""}
+                >
+                  <lucideReact.Bookmark className="w-5 h-5 text-secondary" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Subject</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/attendance/add') && (
+              <div className="tooltip tooltip-right" data-tip="Take Attendance">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/attendance/add' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/attendance/add')}
+                  title={!isExpanded ? "Take Attendance" : ""}
+                >
+                  <lucideReact.CalendarPlus2 className="w-5 h-5 text-warning" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Take Attendance</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/attendance') && (
+              <div className="tooltip tooltip-right" data-tip="View Attendance">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/attendance' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/attendance')}
+                  title={!isExpanded ? "View Attendance" : ""}
+                >
+                  <lucideReact.FileChartLine className="w-5 h-5 text-info" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">View Attendance</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/manage-leave/add') && (
+              <div className="tooltip tooltip-right" data-tip="Apply Leave">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-leave/add' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-leave/add')}
+                  title={!isExpanded ? "Apply Leave" : ""}
+                >
+                  <lucideReact.DoorOpen className="w-5 h-5 text-amber-700" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Apply Leave</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/manage-leave') && (
+              <div className="tooltip tooltip-right" data-tip="View Leave">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-leave' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-leave')}
+                  title={!isExpanded ? "View Leave" : ""}
+                >
+                  <lucideReact.Sticker className="w-5 h-5 text-error" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">View Leave</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/manage-result/add') && (
+              <div className="tooltip tooltip-right" data-tip="Add Result">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-result/add' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-result/add')}
+                  title={!isExpanded ? "Add Result" : ""}
+                >
+                  <lucideReact.FilePenLine className="w-5 h-5 text-emerald-500" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Add Result</span>}
+                </button>
+              </div>
+            )}
+            
+            {canAccessRoute('/manage-result') && (
+              <div className="tooltip tooltip-right" data-tip="View Result">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-result' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-result')}
+                  title={!isExpanded ? "View Result" : ""}
+                >
+                  <lucideReact.FileChartColumn className="w-5 h-5 text-purple-500" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">View Result</span>}
+                </button>
+              </div>
+            )}
           </div>
           {showScrollDown && (
             <div className="absolute bottom-0 left-0 right-0 flex justify-center">
@@ -218,7 +274,7 @@ const Sidebar = () => {
                 />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-white">Mayank Gupta</span>
+                    <span className="text-white">{userName || 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -243,7 +299,7 @@ const Sidebar = () => {
         ) : (
           <div className="p-4 border-t border-base-200">
             <div className="flex flex-col items-center space-y-2">
-              <div className="avatar">
+              <div className="avatar tooltip tooltip-right" data-tip={userName || 'N/A'}>
                 <div className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
                   <img src='/images/mayank.jpg' alt="User" />
                 </div>
