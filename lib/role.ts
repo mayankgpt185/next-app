@@ -12,15 +12,15 @@ export interface UserRoleAccess {
 export const roleAccess: UserRoleAccess[] = [
   {
     role: UserRole.ADMIN,
-    routes: ['/manage-staff', '/manage-staff/add', '/manage-student', '/manage-student/add', '/manage-course', '/manage-course/add', '/manage-subject', '/manage-subject/add', '/attendance', '/attendance/add', '/manage-leave', '/manage-leave/add', '/manage-result', '/manage-result/add'],
+    routes: ['/manage-staff', '/manage-staff/add', '/api/manage-staff', '/manage-student', '/manage-student/add', '/api/manage-student', '/api/student-class', '/manage-course', '/manage-course/add', '/api/manage-course', '/manage-subject', '/manage-subject/add', '/api/manage-subject', '/attendance', '/attendance/add', '/api/attendance', '/manage-leave', '/manage-leave/add', '/api/leave', '/manage-result', '/manage-result/add', '/api/manage-result'],
   },
   {
     role: UserRole.STAFF,
-    routes: ['/manage-student', '/manage-student/add', '/manage-course', '/manage-course/add', '/manage-subject', '/manage-subject/add', '/attendance', '/attendance/add', '/manage-leave', '/manage-leave/add', '/manage-result', '/manage-result/add'],
+      routes: ['/manage-student', '/manage-student/add', '/api/manage-staff', '/api/student-class', '/manage-course', '/manage-course/add', '/api/manage-course', '/manage-subject', '/manage-subject/add', '/api/manage-subject', '/attendance', '/attendance/add', '/api/attendance', '/manage-leave', '/manage-leave/add', '/api/leave', '/manage-result', '/manage-result/add', '/api/manage-result'],
   },
   {
     role: UserRole.STUDENT,
-    routes: ['/manage-student', '/manage-course', '/manage-subject', '/attendance', '/manage-result'],
+    routes: ['/manage-student', '/manage-student/add', '/api/manage-staff', '/api/student-class', '/manage-course', '/manage-course/add', '/api/manage-course', '/manage-subject', '/manage-subject/add', '/api/manage-subject', '/attendance', '/attendance/add', '/api/attendance', '/manage-result', '/api/manage-result'],
   },
 ];
 

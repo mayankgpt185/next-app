@@ -43,7 +43,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Existing user:', existingUser);
     // Create the token
     const token = await createToken({
       id: existingUser._id.toString(),

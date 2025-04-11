@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,6 +27,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const router = useRouter();
   const [error, setError] = useState('');
+
+  // Clear localStorage on page load
+  useEffect(() => {
+    document.cookie = 'auth-token=; path=/; max-age=0';
+    localStorage.clear();
+    window.dispatchEvent(new Event('auth-change'));
+  }, []);
 
   // Email form setup
   const emailForm = useForm<EmailFormData>({
@@ -55,6 +62,8 @@ export default function LoginPage() {
   // Handle login submission
   const handleLoginSubmit: SubmitHandler<LoginFormData> = async (data) => {
     try {
+      setError('');
+      
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({
@@ -68,8 +77,8 @@ export default function LoginPage() {
 
       if (res.ok) {
         const responseData = await res.json();
-        console.log('Login response data:', responseData); // Debug the full response
         
+        // Store auth data in localStorage
         if (responseData.token) {
           localStorage.setItem('token', responseData.token);
           if (responseData.user?.role) {
@@ -77,43 +86,27 @@ export default function LoginPage() {
           }
           if (responseData.user?.email) {
             localStorage.setItem('userEmail', responseData.user.email);
-            
-            // Fix for name - check all possible name properties
-            const userName = responseData.user.name || 
-                            (responseData.user.firstName && responseData.user.lastName ? 
-                             `${responseData.user.firstName} ${responseData.user.lastName}` : 
-                             responseData.user.firstName || responseData.user.lastName || 'User');
-            
-            console.log('Setting user name:', userName);
-            localStorage.setItem('name', userName);
           }
+          if (responseData.user?.name) {
+            localStorage.setItem('name', responseData.user.name);
+          }
+          window.dispatchEvent(new Event('auth-change'));
+          document.cookie = `auth-token=${responseData.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
         }
-        
-        // Get user role, handling potential document structure issues
-        const userRole = responseData.user?.role || 
-                         responseData.user?._doc?.role ||
-                         responseData.user?.toJSON?.()?.role;
-        
         // Find the first route the user has access to based on their role
-        const userRoleRoutes = roleAccess.find(access => access.role === userRole);
+        const userRoleRoutes = roleAccess.find(access => access.role === responseData.user.role);
         
         if (userRoleRoutes && userRoleRoutes.routes.length > 0) {
-          // Redirect to the first route they have access to
-          console.log('User role routes:', userRoleRoutes);
-          router.push(userRoleRoutes.routes[0]);
+          const firstRoute = userRoleRoutes.routes[0];
+          router.replace(firstRoute);
         } else {
-          console.log('fallback');
-          // Fallback in case role matching fails
-          router.push('/manage-staff');
+          router.replace('/contact-admin');
         }
-        
-        router.refresh(); // Refresh the current route to update the auth state
       } else {
         const responseData = await res.json();
         setError(responseData.error || 'Invalid credentials');
       }
     } catch (error) {
-      console.error('Login error:', error);
       setError('An error occurred during login');
     }
   };
