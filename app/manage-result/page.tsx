@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
 import { Loader2 } from 'lucide-react';
-
+import { useRouter } from 'next/navigation';
 interface Class {
     _id: string;
     classNumber: string;
@@ -52,6 +52,7 @@ interface AcademicYear {
 }
 
 const ViewResults = () => {
+    const router = useRouter();
     const [userType, setUserType] = useState<'student' | 'teacher' | ''>('');
     const [classes, setClasses] = useState<Class[]>([]);
     const [sections, setSections] = useState<Section[]>([]);
@@ -152,9 +153,33 @@ const ViewResults = () => {
         if (!selectedStudentId) {
             setResults([]);
         }
-        // We're removing the automatic fetching that was here
     }, [selectedStudentId, userType, selectedClassId, selectedSectionId]);
 
+    // Add this useEffect to set user type from localStorage - with debugging
+    useEffect(() => {
+        try {
+            const userRole = localStorage.getItem('userRole');
+            
+            if (userRole) {
+                if (userRole === 'ADMIN' || userRole === 'STAFF') {
+                    setUserType('teacher');
+                } else if (userRole === 'STUDENT') {
+                    setUserType('student');
+                    // const studentId = localStorage.getItem('userId');
+                    // if (studentId) {
+                    //     setSelectedStudentId(studentId);
+                    // }
+                }
+            } else {
+                console.log('No role found in localStorage');
+            }
+        } catch (error) {
+            toast.error('Failed to get user role');
+            router.push('/login');
+        }
+    }, []);
+    
+    // Original useEffect for fetching academic years
     useEffect(() => {
         const fetchAcademicYears = async () => {
             try {
@@ -167,12 +192,26 @@ const ViewResults = () => {
                 setAcademicYears(data);
 
                 if (data.length > 0) {
-                    // Sort by startDate in descending order
-                    const sortedYears = [...data].sort((a, b) =>
-                        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-                    );
-
-                    setSelectedAcademicYearId(sortedYears[0]._id);
+                    // Get current date
+                    const currentDate = new Date();
+                    
+                    // Find academic year containing current date
+                    const currentAcademicYear = data.find((year: any) => {
+                        const startDate = new Date(year.startDate);
+                        const endDate = new Date(year.endDate);
+                        return currentDate >= startDate && currentDate <= endDate;
+                    });
+                    
+                    if (currentAcademicYear) {
+                        // Set the academic year that contains the current date
+                        setSelectedAcademicYearId(currentAcademicYear._id);
+                    } else {
+                        // Fallback: Sort by startDate in descending order and use the most recent
+                        const sortedYears = [...data].sort((a, b) =>
+                            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+                        );
+                        setSelectedAcademicYearId(sortedYears[0]._id);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching academic years:', error);
