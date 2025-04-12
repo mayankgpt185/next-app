@@ -14,7 +14,21 @@ export default function AddLeavePage() {
     const [isLoadingStaffList, setIsLoadingStaffList] = useState(false);
     const [selectedApproverId, setSelectedApproverId] = useState('');
 
-    // Fetch staff list on component mount
+    // Add this function to get user ID from token
+    const getUserIdFromToken = () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+            const payload = token.split('.')[1];
+            const decodedPayload = JSON.parse(atob(payload));
+            return decodedPayload.id;
+        } catch (error) {
+            console.error('Error extracting user ID from token:', error);
+            return null;
+        }
+    };
+
+    // Update the useEffect for fetching staff list to also set the staff ID
     useEffect(() => {
         const fetchStaffList = async () => {
             try {
@@ -25,6 +39,12 @@ export default function AddLeavePage() {
                 }
                 const data = await response.json();
                 setStaffList(data);
+                
+                // Get user ID from token and set as selected staff if not already set
+                const userId = getUserIdFromToken();
+                if (userId && !selectedStaffId) {
+                    setSelectedStaffId(userId);
+                }
             } catch (error) {
                 console.error('Error fetching staff list:', error);
                 toast.error('Failed to load staff list');
@@ -34,7 +54,7 @@ export default function AddLeavePage() {
         };
 
         fetchStaffList();
-    }, []);
+    }, [selectedStaffId]);
 
     // Handle leave application submission
     const submitLeaveApplication = async () => {
@@ -139,19 +159,26 @@ export default function AddLeavePage() {
                                 <span className="label-text text-base-content">Staff Member</span>
                             </label>
                             <div className="relative">
-                                <select
-                                    className="select select-bordered w-full bg-base-100 text-base-content"
-                                    value={selectedStaffId}
-                                    onChange={(e) => setSelectedStaffId(e.target.value)}
-                                    disabled={isLoadingStaffList}
-                                >
-                                    <option value="">Select Staff Member</option>
-                                    {staffList.map((staff) => (
-                                        <option key={staff._id} value={staff._id} className="text-base-content bg-base-100">
-                                            {staff.firstName} {staff.lastName}
-                                        </option>
-                                    ))}
-                                </select>
+                                {/* Display selected staff member's name */}
+                                {staffList.length > 0 && selectedStaffId ? (
+                                    <div className="input input-bordered w-full bg-base-100 text-base-content flex items-center h-12 px-4">
+                                        {staffList.find(staff => staff._id.toString() === selectedStaffId.toString())?.firstName || ''} {staffList.find(staff => staff._id.toString() === selectedStaffId.toString())?.lastName || ''}
+                                    </div>
+                                ) : (
+                                    <select
+                                        className="select select-bordered w-full bg-base-100 text-base-content"
+                                        value={selectedStaffId}
+                                        onChange={(e) => setSelectedStaffId(e.target.value)}
+                                        disabled={true}
+                                    >
+                                        {/* <option value="">Loading staff member...</option> */}
+                                        {staffList.map((staff) => (
+                                            <option key={staff._id} value={staff._id} className="text-base-content bg-base-100">
+                                                {staff.firstName} {staff.lastName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                                 {isLoadingStaffList && (
                                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                                         <span className="loading loading-spinner loading-sm text-primary"></span>

@@ -22,7 +22,28 @@ export default function ViewAttendancePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editedStudents, setEditedStudents] = useState<{ _id: string, name: string, status: string }[]>([]);
     const [hasChanges, setHasChanges] = useState(false);
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    const [userRole, setUserRole] = useState<string | null>(null);
+
+    // Add this function to decode JWT token and get user ID
+    const getUserIdFromToken = () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+            const payload = token.split('.')[1];
+            const decodedPayload = JSON.parse(atob(payload));
+            return decodedPayload.id;
+        } catch (error) {
+            console.error('Error extracting user ID from token:', error);
+            return null;
+        }
+    };
+
+    // Set user role from localStorage when component mounts
+    useEffect(() => {
+        const role = localStorage.getItem('userRole');
+        setUserRole(role);
+    }, []);
+
     // Fetch classes and sections and combine them
     useEffect(() => {
         const fetchClassesAndSections = async () => {
@@ -56,11 +77,51 @@ export default function ViewAttendancePage() {
                 });
                 
                 setClassSections(combinedOptions);
+                
+                // Check for student role and set class-section
+                const userRole = localStorage.getItem('userRole');
+                if (userRole === UserRole.STUDENT) {
+                    const userId = getUserIdFromToken();
+                    if (userId) {
+                        await fetchStudentDetails(userId, combinedOptions);
+                    }
+                }
             } catch (error) {
                 console.error('Error fetching classes and sections:', error);
                 setClassSections([]);
             } finally {
                 setIsLoadingClassSections(false);
+            }
+        };
+
+        // Function to fetch student details and set class/section
+        const fetchStudentDetails = async (studentId: string, options: any[]) => {
+            try {
+                // Get the student's class and section from student-class API
+                const studentClassResponse = await fetch(`/api/student-class?studentId=${studentId}`);
+                
+                if (!studentClassResponse.ok) {
+                    throw new Error('Failed to fetch student class information');
+                }
+                
+                const studentClassData = await studentClassResponse.json();
+                
+                if (studentClassData && studentClassData.class && studentClassData.section) {
+                    // Find matching class-section in our options
+                    const matchingOption = options.find(
+                        option => option.classId === studentClassData.class._id && 
+                                  option.sectionId === studentClassData.section._id
+                    );
+                    
+                    if (matchingOption) {
+                        setSelectedClassSection(matchingOption.id);
+                    }
+                } else {
+                    toast.error('No class/section found for this student');
+                }
+            } catch (error) {
+                console.error('Error fetching student details:', error);
+                toast.error('Failed to load student details');
             }
         };
 
@@ -292,32 +353,34 @@ export default function ViewAttendancePage() {
                             )}
                         </div>
 
-                        {/* Class-Section Selection */}
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text text-base-content">Class & Section</span>
-                            </label>
-                            <div className="relative">
-                                <select
-                                    className="select select-bordered w-full bg-base-100 text-base-content"
-                                    value={selectedClassSection}
-                                    onChange={handleClassSectionChange}
-                                    disabled={isLoadingClassSections}
-                                >
-                                    <option value="">Select Class & Section</option>
-                                    {classSections.map((cs) => (
-                                        <option key={cs.id} value={cs.id} className="text-base-content bg-base-100">
-                                            {cs.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                {isLoadingClassSections && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <span className="loading loading-spinner loading-sm text-primary"></span>
-                                    </div>
-                                )}
+                        {/* Class-Section Selection - Only show if not student */}
+                        {userRole !== 'STUDENT' && (
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Class & Section</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        className="select select-bordered w-full bg-base-100 text-base-content"
+                                        value={selectedClassSection}
+                                        onChange={handleClassSectionChange}
+                                        disabled={isLoadingClassSections}
+                                    >
+                                        <option value="">Select Class & Section</option>
+                                        {classSections.map((cs) => (
+                                            <option key={cs.id} value={cs.id} className="text-base-content bg-base-100">
+                                                {cs.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {isLoadingClassSections && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <span className="loading loading-spinner loading-sm text-primary"></span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Subject Selection */}
                         <div className="form-control w-full">
@@ -384,7 +447,7 @@ export default function ViewAttendancePage() {
                                                     </p>
                                                 )}
                                             </div>
-                                            {userData.role != UserRole.STUDENT && (
+                                            {userRole != UserRole.STUDENT && (
                                                 isEditing ? (
                                                     <div className="flex gap-2">
                                                     <Button 

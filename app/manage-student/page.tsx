@@ -77,7 +77,6 @@ export default function ManageStudentPage() {
         if (!selectedStudentId) return;
 
         try {
-            console.log('Deleting student with ID:', selectedStudentId);
             const response = await fetch(`/api/manage-staff?id=${selectedStudentId}`, {
                 method: 'DELETE',
             });

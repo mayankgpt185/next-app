@@ -71,7 +71,6 @@ export default function ManageCoursePage() {
         if (!selectedCourseId) return;
 
         try {
-            console.log('Deleting course with ID:', selectedCourseId);
             const response = await fetch(`/api/manage-course?id=${selectedCourseId}`, {
                 method: 'DELETE',
             });

@@ -114,7 +114,6 @@ export default function ManageSubjectPage() {
         if (!selectedSubjectId) return;
 
         try {
-            console.log('Deleting subject with ID:', selectedSubjectId);
             const response = await fetch(`/api/manage-subject?id=${selectedSubjectId}`, {
                 method: 'DELETE',
             });

@@ -7,6 +7,7 @@ export interface IResult extends Document {
     subjectId: string;
     staffId: string;
     totalMarks: number;
+    passingMarks: number;
     results: {
         studentId: string;
         marks: number | null;
@@ -27,6 +28,7 @@ const ResultSchema = new mongoose.Schema(
     subjectId: { type: mongoose.Schema.Types.ObjectId, ref: "subjects", required: true },
     staffId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
     totalMarks: { type: Number, required: true },
+    passingMarks: { type: Number, required: true },
     results: [{
       studentId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
       marks: { type: Number, default: null },

@@ -121,7 +121,6 @@ export default function AddResultPage() {
                 throw new Error('Failed to fetch subjects');
             }
             const data = await response.json();
-            console.log(data);
             setSubjectOptions(data);
         } catch (error) {
             console.error('Error fetching subjects:', error);
@@ -173,7 +172,6 @@ export default function AddResultPage() {
                 throw new Error('Failed to fetch teachers');
             }
             const data = await response.json();
-            console.log(data);
 
             // Extract staff information from the staffIds array
             if (data && data.staffIds && Array.isArray(data.staffIds)) {
@@ -333,7 +331,6 @@ export default function AddResultPage() {
         }
 
         try {
-            console.log(results);
             const response = await fetch('/api/manage-result', {
                 method: 'POST',
                 headers: {

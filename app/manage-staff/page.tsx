@@ -65,7 +65,6 @@ export default function ManageStaffPage() {
         if (!selectedStaffId) return;
 
         try {
-            console.log('Deleting staff with ID:', selectedStaffId);
             const response = await fetch(`/api/manage-staff?id=${selectedStaffId}`, {
                 method: 'DELETE',
             });

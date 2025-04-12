@@ -178,7 +178,6 @@ export default function AttendanceAddPage() {
                     present: true
                 }));
 
-                console.log(studentClassesData);
                 setStudents(studentClassesData);
                 setAttendanceData(initialAttendance);
             } catch (error) {
@@ -217,12 +216,10 @@ export default function AttendanceAddPage() {
 
         try {
             const subjectDetails = subjects.find(subject => subject.uniqueId === selectedSubject);
-            console.log(attendanceDate, subjectDetails?._id, selectedClassId, selectedSectionId);
 
             // Check if attendance already exists for this date, subject, class and section
             const checkResponse = await fetch(`/api/attendance?attendanceDate=${attendanceDate}&subjectId=${subjectDetails?._id}&classId=${selectedClassId}&sectionId=${selectedSectionId}`);
             const checkData = await checkResponse.json();
-            console.log(checkData);
 
             if (checkData.length > 0) {
                 toast.error('Attendance already recorded. Please select a different date, subject, class or section.');

@@ -69,6 +69,8 @@ const ViewResults = () => {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [selectedSubjectId, setSelectedSubjectId] = useState('');
     const [allStudentResults, setAllStudentResults] = useState<any[]>([]);
+    const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
+    const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
     // Fetch classes on component mount
     useEffect(() => {
@@ -182,7 +184,6 @@ const ViewResults = () => {
             }
             
             const studentClassData = await studentClassResponse.json();
-            console.log(studentClassData);
             if (studentClassData) {
                 // Set class and section from the student's data
                 setSelectedClassId(studentClassData.class._id);
@@ -197,7 +198,7 @@ const ViewResults = () => {
         }
     };
 
-    // Update the useEffect that sets the user type
+    // Update the useEffect for user role detection to ensure the function is called
     useEffect(() => {
         try {
             const userRole = localStorage.getItem('userRole');
@@ -222,8 +223,6 @@ const ViewResults = () => {
                         // For students, automatically fetch their class and section
                         fetchStudentDetails(userId);
                     }
-                } else {
-                    console.log('Unrecognized role:', userRole);
                 }
             }
         } catch (error) {
@@ -232,9 +231,10 @@ const ViewResults = () => {
         }
     }, []);
     
-    // Original useEffect for fetching academic years
+    // Modify the academic year useEffect
     useEffect(() => {
         const fetchAcademicYears = async () => {
+            setIsLoadingAcademicYears(true);
             try {
                 const response = await fetch('/api/session');
                 if (!response.ok) {
@@ -269,6 +269,8 @@ const ViewResults = () => {
             } catch (error) {
                 console.error('Error fetching academic years:', error);
                 toast.error('Failed to load academic years');
+            } finally {
+                setIsLoadingAcademicYears(false);
             }
         };
 
@@ -283,6 +285,7 @@ const ViewResults = () => {
                 return;
             }
             
+            setIsLoadingSubjects(true);
             const params = new URLSearchParams({
                 classId: selectedClassId,
                 sectionId: selectedSectionId
@@ -300,6 +303,8 @@ const ViewResults = () => {
         } catch (error) {
             console.error('Error fetching subjects:', error);
             toast.error('Failed to load subjects');
+        } finally {
+            setIsLoadingSubjects(false);
         }
     };
 
@@ -397,7 +402,6 @@ const ViewResults = () => {
                 }
 
                 const data = await response.json();
-                console.log(data);
                 setResults(data);
             } else {
                 // Fetch results for all students for a specific subject
@@ -413,7 +417,6 @@ const ViewResults = () => {
                 }
 
                 const data = await response.json();
-                console.log("All student results:", data);
                 setAllStudentResults(data);
                 // Clear single student results
                 setResults([]);
@@ -457,24 +460,31 @@ const ViewResults = () => {
                             <label className="label">
                                 <span className="label-text text-base-content">Academic Year</span>
                             </label>
-                            <select
-                                className="select select-bordered w-full bg-base-100 text-base-content"
-                                value={selectedAcademicYearId}
-                                onChange={(e) => setSelectedAcademicYearId(e.target.value)}
-                            >
-                                <option value="">Select Academic Year</option>
-                                {academicYears.map(year => {
-                                    const startDate = new Date(year.startDate);
-                                    const endDate = new Date(year.endDate);
-                                    const label = `${startDate.toLocaleString('default', { month: 'short' })} ${startDate.getFullYear()} - ${endDate.toLocaleString('default', { month: 'short' })} ${endDate.getFullYear()}`;
+                            <div className="relative">
+                                <select
+                                    className="select select-bordered w-full bg-base-100 text-base-content"
+                                    value={selectedAcademicYearId}
+                                    onChange={(e) => setSelectedAcademicYearId(e.target.value)}
+                                >
+                                    <option value="">Select Academic Year</option>
+                                    {academicYears.map(year => {
+                                        const startDate = new Date(year.startDate);
+                                        const endDate = new Date(year.endDate);
+                                        const label = `${startDate.toLocaleString('default', { month: 'short' })} ${startDate.getFullYear()} - ${endDate.toLocaleString('default', { month: 'short' })} ${endDate.getFullYear()}`;
 
-                                    return (
-                                        <option key={year._id} value={year._id} className="text-base-content bg-base-100">
-                                            {label}
-                                        </option>
-                                    );
-                                })}
-                            </select>
+                                        return (
+                                            <option key={year._id} value={year._id} className="text-base-content bg-base-100">
+                                                {label}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                {isLoadingAcademicYears && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <span className="loading loading-spinner loading-sm text-primary"></span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* User Type Selection - Hidden now that it's automatically determined */}
@@ -564,7 +574,7 @@ const ViewResults = () => {
                                             </option>
                                         ))}
                                     </select>
-                                    {isLoading && !selectedSubjectId && (
+                                    {isLoadingSubjects && (
                                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                                             <span className="loading loading-spinner loading-sm text-primary"></span>
                                         </div>
@@ -603,6 +613,21 @@ const ViewResults = () => {
                         )}
                     </div>
 
+                    {/* Move the fetch results button here, right after the selection fields */}
+                    <div className="flex justify-end mb-6">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            outline
+                            onClick={fetchResults}
+                            disabled={(userType === 'student' && !selectedStudentId) || 
+                                     (userType === 'teacher' && !selectedSubjectId) ||
+                                     isLoading}
+                        >
+                            Fetch Results
+                        </Button>
+                    </div>
+
                     {/* Results Table (display one of two different tables based on the user type) */}
                     {isLoading ? (
                         <div className="flex justify-center my-8">
@@ -620,7 +645,7 @@ const ViewResults = () => {
                                         <th className="text-base-content">Passing Marks</th>
                                         <th className="text-base-content">Status</th>
                                         <th className="text-base-content">Marks Obtained</th>
-                                        <th className="text-base-content">Percentage</th>
+                                        <th className="text-base-content">Result</th>
                                         <th className="text-base-content">Grade</th>
                                     </tr>
                                 </thead>
@@ -632,9 +657,25 @@ const ViewResults = () => {
                                             <td>{getTeacherName(result.staffId)}</td>
                                             <td>{result.totalMarks}</td>
                                             <td>{result.passingMarks}</td>
-                                            <td>{result.present ? 'Present' : 'Absent'}</td>
+                                            <td>
+                                                {result.present ? (
+                                                    <span className="badge badge-success text-white">Present</span>
+                                                ) : (
+                                                    <span className="badge badge-error text-white">Absent</span>
+                                                )}
+                                            </td>
                                             <td>{result.present ? result.studentMarks : 'N/A'}</td>
-                                            <td>{result.present && result.percentage !== null ? `${result.percentage.toFixed(2)}%` : 'N/A'}</td>
+                                            <td>
+                                                {result.present ? (
+                                                    result.studentMarks !== null && result.studentMarks >= result.passingMarks ? (
+                                                        <span className="badge badge-success text-white">Pass</span>
+                                                    ) : (
+                                                        <span className="badge badge-error text-white">Fail</span>
+                                                    )
+                                                ) : (
+                                                    'N/A'
+                                                )}
+                                            </td>
                                             <td>{result.present && result.grade ? result.grade : 'N/A'}</td>
                                         </tr>
                                     ))}
@@ -652,7 +693,7 @@ const ViewResults = () => {
                                         <th className="text-base-content">Total Marks</th>
                                         <th className="text-base-content">Status</th>
                                         <th className="text-base-content">Marks Obtained</th>
-                                        <th className="text-base-content">Percentage</th>
+                                        <th className="text-base-content">Result</th>
                                         <th className="text-base-content">Grade</th>
                                     </tr>
                                 </thead>
@@ -664,9 +705,25 @@ const ViewResults = () => {
                                                 <td>{new Date(resultSet.examDate).toLocaleDateString()}</td>
                                                 <td>{getSubjectName(resultSet.subjectId)}</td>
                                                 <td>{resultSet.totalMarks}</td>
-                                                <td>{studentResult.present ? 'Present' : 'Absent'}</td>
+                                                <td>
+                                                    {studentResult.present ? (
+                                                        <span className="badge badge-success text-white">Present</span>
+                                                    ) : (
+                                                        <span className="badge badge-error text-white">Absent</span>
+                                                    )}
+                                                </td>
                                                 <td>{studentResult.present ? studentResult.marks : 'N/A'}</td>
-                                                <td>{studentResult.present && studentResult.percentage !== null ? `${studentResult.percentage.toFixed(2)}%` : 'N/A'}</td>
+                                                <td>
+                                                    {studentResult.present ? (
+                                                        studentResult.marks >= resultSet.passingMarks ? (
+                                                            <span className="badge badge-success text-white">Pass</span>
+                                                        ) : (
+                                                            <span className="badge badge-error text-white">Fail</span>
+                                                        )
+                                                    ) : (
+                                                        'N/A'
+                                                    )}
+                                                </td>
                                                 <td>{studentResult.present && studentResult.grade ? studentResult.grade : 'N/A'}</td>
                                             </tr>
                                         ))
@@ -680,26 +737,6 @@ const ViewResults = () => {
                             <p className="text-lg text-base-content">No results found for the selected criteria.</p>
                         </div>
                     ) : null}
-
-                    <div className="flex justify-end mt-6">
-                        <Button
-                            type="button"
-                            variant="primary"
-                            outline
-                            onClick={fetchResults}
-                            disabled={(userType === 'student' && !selectedStudentId) || 
-                                      (userType === 'teacher' && !selectedSubjectId)}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Loading...
-                                </>
-                            ) : (
-                                'Fetch Results'
-                            )}
-                        </Button>
-                    </div>
                 </div>
             </div>
         </div>

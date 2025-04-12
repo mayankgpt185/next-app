@@ -80,7 +80,7 @@ export async function GET(request: Request) {
           examDate: result.examDate,
           subjectId: result.subjectId,
           totalMarks: result.totalMarks,
-          passingMarks: result.totalMarks,
+          passingMarks: result.passingMarks,
           studentMarks: studentResult?.marks || null,
           percentage: studentResult?.percentage || null,
           grade: studentResult?.grade || null,
