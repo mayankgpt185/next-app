@@ -9,16 +9,12 @@ const publicRoutes = ['/login', '/signup', '/api/auth/login', '/api/classes', 'a
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow access to public routes
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
   
-  // Get token from cookies for page routes or Authorization header for API routes
   const token = request.cookies.get('auth-token')?.value || 
                 request.headers.get('Authorization')?.replace('Bearer ', '');
-  
-  // If no token, redirect to login for page routes or return 401 for API routes
   if (!token) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,9 +25,8 @@ export async function middleware(request: NextRequest) {
   try {
     // Verify token and get user data
     const userData = await verifyToken(token);
-    
+
     if (!userData) {
-      console.error('Invalid token');
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
       }

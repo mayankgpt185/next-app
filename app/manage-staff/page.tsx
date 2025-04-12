@@ -26,8 +26,14 @@ export default function ManageStaffPage() {
     const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
     const staffRole = "STAFF";
     const [isLoading, setIsLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedRole = localStorage.getItem('userRole');
+            setUserRole(storedRole);
+        }
+
         const fetchStaff = async () => {
             try {
                 const response = await fetch(`/api/manage-staff?role=${staffRole}`);
@@ -93,12 +99,14 @@ export default function ManageStaffPage() {
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-base-content">Manage Staff</h1>
-                <Link href="/manage-staff/add">
-                    <Button variant="primary" type="submit" outline>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Staff
-                    </Button>
-                </Link>
+                {userRole === 'STAFF' && (
+                    <Link href="/manage-staff/add">
+                        <Button variant="primary" type="submit" outline>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Staff
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <div className="card bg-base-200 shadow-xl flex-1">

@@ -27,8 +27,14 @@ export default function ManageCoursePage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedRole = localStorage.getItem('userRole');
+            setUserRole(storedRole);
+        }
+
         const fetchCourse = async () => {
             try {
                 const response = await fetch(`/api/manage-course`);
@@ -99,12 +105,14 @@ export default function ManageCoursePage() {
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-base-content">Manage Course</h1>
-                <Link href="/manage-course/add">
-                    <Button variant="primary" type="submit" outline>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Course
-                    </Button>
-                </Link>
+                {userRole !== 'STUDENT' && (
+                    <Link href="/manage-course/add">
+                        <Button variant="primary" type="submit" outline>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Course
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <div className="card bg-base-200 shadow-xl flex-1">
@@ -140,11 +148,13 @@ export default function ManageCoursePage() {
                                                 <td className="text-base-content">{course.class.classNumber}</td>
                                                 <td>
                                                     <div className="flex gap-2">
-                                                        <Link href={`/manage-course/add?id=${course._id}`}>
-                                                            <Button className="btn btn-ghost btn-sm">
-                                                                <Edit className="w-4 h-4 text-info" />
-                                                            </Button>
-                                                        </Link>
+                                                        {userRole !== 'STUDENT' && (
+                                                            <Link href={`/manage-course/add?id=${course._id}`}>
+                                                                <Button className="btn btn-ghost btn-sm">
+                                                                    <Edit className="w-4 h-4 text-info" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
                                                         <Button className="btn btn-ghost btn-sm"
                                                             onClick={() => {
                                                                 setSelectedCourseId(course._id);

@@ -15,13 +15,42 @@ export default function ViewLeavePage() {
         status: string
     }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [approvers, setApprovers] = useState([]);
+    const [approvers, setApprovers] = useState<{ _id: string; firstName: string; lastName: string }[]>([]);
     const [selectedApproverId, setSelectedApproverId] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentAction, setCurrentAction] = useState<'approve' | 'cancel' | null>(null);
     const [currentApplicationId, setCurrentApplicationId] = useState<string | null>(null);
+    const [currentApproverName, setCurrentApproverName] = useState('');
 
     useEffect(() => {
+        // Get token from cookies or localStorage
+        const getTokenFromCookie = () => {
+            const cookies = document.cookie.split(';');
+            const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('auth-token='));
+            return tokenCookie ? tokenCookie.split('=')[1] : '';
+        };
+        
+        const token = getTokenFromCookie() || localStorage.getItem('auth-token');
+        
+        if (token) {
+            try {
+                // Decode JWT token (payload is the second part)
+                const payload = token.split('.')[1];
+                const decodedData = JSON.parse(atob(payload));
+                
+                // Set the user ID from token as the approver
+                if (decodedData.id) {
+                    setSelectedApproverId(decodedData.id);
+                }
+            } catch (error) {
+                console.error('Error decoding token:', error);
+                toast.error('Failed to authenticate. Please login again.');
+            }
+        } else {
+            toast.error('Not authenticated. Please login first.');
+        }
+        
+        // Fetch approvers for displaying name
         const fetchApprovers = async () => {
             try {
                 const response = await fetch('/api/manage-staff?role=STAFF');
@@ -38,6 +67,16 @@ export default function ViewLeavePage() {
 
         fetchApprovers();
     }, []);
+    
+    // Update current approver name when approvers list or selectedApproverId changes
+    useEffect(() => {
+        if (approvers.length && selectedApproverId) {
+            const currentApprover = approvers.find((approver: any) => approver._id === selectedApproverId);
+            if (currentApprover) {
+                setCurrentApproverName(`${currentApprover.firstName} ${currentApprover.lastName}`);
+            }
+        }
+    }, [approvers, selectedApproverId]);
 
     useEffect(() => {
         if (!selectedApproverId) return;
@@ -121,21 +160,12 @@ export default function ViewLeavePage() {
     return (
         <div className="flex flex-col w-full p-6 bg-base-100 min-h-screen">
             <div className="mb-4">
-                <label className="label">
-                    <span className="label-text text-base-content">Select Approver</span>
-                </label>
-                <select
-                    className="select select-bordered w-64 bg-base-100 text-base-content"
-                    value={selectedApproverId}
-                    onChange={(e) => setSelectedApproverId(e.target.value)}
-                >
-                    <option value="">Select Approver</option>
-                    {approvers.map((approver: any) => (
-                        <option key={approver._id} value={approver._id}>
-                            {approver.firstName} {approver.lastName}
-                        </option>
-                    ))}
-                </select>
+                <div className="flex items-center">
+                    <h3 className="text-lg font-medium text-base-content">Approver:</h3>
+                    <span className="ml-2 font-semibold text-primary">
+                        {currentApproverName || 'Loading...'}
+                    </span>
+                </div>
             </div>
 
             <div className="card bg-base-200 shadow-xl">

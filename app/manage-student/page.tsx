@@ -28,8 +28,14 @@ export default function ManageStudentPage() {
     const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
     const studentRole = "STUDENT";
     const [isLoading, setIsLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedRole = localStorage.getItem('userRole');
+            setUserRole(storedRole);
+        }
+
         const fetchStudent = async () => {
             try {
                 const response = await fetch(`/api/manage-staff?role=${studentRole}`);
@@ -105,12 +111,14 @@ export default function ManageStudentPage() {
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-base-content">Manage Student</h1>
-                <Link href="/manage-student/add">
-                    <Button variant="primary" type="submit" outline>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Student
-                    </Button>
-                </Link>
+                {userRole !== 'STUDENT' && (
+                    <Link href="/manage-student/add">
+                        <Button variant="primary" type="submit" outline>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Student
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <div className="card bg-base-200 shadow-xl flex-1">

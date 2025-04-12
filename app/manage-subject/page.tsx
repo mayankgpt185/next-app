@@ -44,8 +44,14 @@ export default function ManageSubjectPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedRole = localStorage.getItem('userRole');
+            setUserRole(storedRole);
+        }
+
         const fetchData = async () => {
             try {
                 setIsLoading(true);
@@ -142,12 +148,14 @@ export default function ManageSubjectPage() {
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-base-content">Manage Subject</h1>
-                <Link href="/manage-subject/add">
-                    <Button variant="primary" type="submit" outline>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Subject
-                    </Button>
-                </Link>
+                {userRole !== 'STUDENT' && (
+                    <Link href="/manage-subject/add">
+                        <Button variant="primary" type="submit" outline>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Subject
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             <div className="card bg-base-200 shadow-xl flex-1">
@@ -204,11 +212,13 @@ export default function ManageSubjectPage() {
                                                 <td className="text-base-content">{formatDate(subject?.updatedAt) || 'N/A'}</td>
                                                 <td>
                                                     <div className="flex gap-2">
-                                                        <Link href={`/manage-subject/add?id=${subject._id}`}>
-                                                            <Button className="btn btn-ghost btn-sm">
-                                                                <Edit className="w-4 h-4 text-info" />
-                                                            </Button>
-                                                        </Link>
+                                                        {userRole !== 'STUDENT' && (
+                                                            <Link href={`/manage-subject/add?id=${subject._id}`}>
+                                                                <Button className="btn btn-ghost btn-sm">
+                                                                    <Edit className="w-4 h-4 text-info" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
                                                         <Button className="btn btn-ghost btn-sm"
                                                             onClick={() => {
                                                                 setSelectedSubjectId(subject._id);

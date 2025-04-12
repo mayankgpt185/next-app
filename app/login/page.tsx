@@ -28,9 +28,11 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState('');
 
-  // Clear localStorage on page load
+  // Clear localStorage and cookies on page load
   useEffect(() => {
-    document.cookie = 'auth-token=; path=/; max-age=0';
+    // Remove auth cookie without expiration
+    document.cookie = 'auth-token=; path=/; max-age=0;';
+    
     localStorage.clear();
     window.dispatchEvent(new Event('auth-change'));
   }, []);

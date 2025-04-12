@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { StudentMemberDTO } from '../api/dto/StudentMember';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/button';
-
+import { UserRole } from '@/lib/role';
 export default function ViewAttendancePage() {
     const [subjects, setSubjects] = useState<{ _id: string, subject: string, class: string, section: string, courseId: { class: string, section: string } }[]>([]);
     const [students, setStudents] = useState<{ _id: string, name: string, status: string }[]>([]);
@@ -22,7 +22,7 @@ export default function ViewAttendancePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editedStudents, setEditedStudents] = useState<{ _id: string, name: string, status: string }[]>([]);
     const [hasChanges, setHasChanges] = useState(false);
-
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
     // Fetch classes and sections and combine them
     useEffect(() => {
         const fetchClassesAndSections = async () => {
@@ -384,8 +384,9 @@ export default function ViewAttendancePage() {
                                                     </p>
                                                 )}
                                             </div>
-                                            {isEditing ? (
-                                                <div className="flex gap-2">
+                                            {userData.role != UserRole.STUDENT && (
+                                                isEditing ? (
+                                                    <div className="flex gap-2">
                                                     <Button 
                                                         type="button"
                                                         variant="success"
@@ -413,6 +414,7 @@ export default function ViewAttendancePage() {
                                                 >
                                                     Edit Attendance
                                                 </Button>
+                                                )
                                             )}
                                         </div>
                                         <div className="overflow-y-auto h-[calc(100vh-280px)]">
