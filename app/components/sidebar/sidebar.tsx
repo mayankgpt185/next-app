@@ -129,8 +129,8 @@ const Sidebar = () => {
 
   return (
     <div className="flex">
-      {/* Sidebar - Fixed */}
-      <div className={`fixed top-0 left-0 flex flex-col ${isExpanded ? 'w-64' : 'w-16'} h-full bg-base-300 border-r border-base-200 transition-all duration-300 ease-in-out`}>
+      {/* Sidebar - Fixed with higher z-index */}
+      <div className={`fixed top-0 left-0 flex flex-col ${isExpanded ? 'w-64' : 'w-16'} h-full bg-base-300 border-r border-base-200 transition-all duration-300 ease-in-out z-[1000]`}>
         {/* Expander Button - Fixed at the top */}
         <div className="p-4 border-b border-base-200">
           <button
@@ -371,7 +371,7 @@ const Sidebar = () => {
                 </div>
                 
                 {showProfileMenu && (
-                  <div className="absolute top-0 left-full ml-2 bg-base-100 rounded-md shadow-lg z-50 w-32 overflow-hidden border border-base-300">
+                  <div className="fixed ml-2 bg-base-100 rounded-md shadow-lg z-[9999] w-32 overflow-hidden border border-base-300" style={{ left: '4rem', top: profileMenuRef.current?.getBoundingClientRect().top + 'px' }}>
                     <ul className="py-1">
                       <li>
                         <button 
