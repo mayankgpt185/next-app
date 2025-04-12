@@ -67,6 +67,8 @@ const ViewResults = () => {
     const [hasFetchedResults, setHasFetchedResults] = useState(false);
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [selectedSubjectId, setSelectedSubjectId] = useState('');
+    const [allStudentResults, setAllStudentResults] = useState<any[]>([]);
 
     // Fetch classes on component mount
     useEffect(() => {
@@ -155,23 +157,74 @@ const ViewResults = () => {
         }
     }, [selectedStudentId, userType, selectedClassId, selectedSectionId]);
 
-    // Add this useEffect to set user type from localStorage - with debugging
+    // Add this function to decode JWT token and get user ID
+    const getUserIdFromToken = () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+            const payload = token.split('.')[1];
+            const decodedPayload = JSON.parse(atob(payload));
+            return decodedPayload.id;
+        } catch (error) {
+            console.error('Error extracting user ID from token:', error);
+            return null;
+        }
+    };
+
+    // Add this function to fetch student details
+    const fetchStudentDetails = async (studentId: string) => {
+        try {
+            // First get the student's class and section from student-class API
+            const studentClassResponse = await fetch(`/api/student-class?studentId=${studentId}`);
+            
+            if (!studentClassResponse.ok) {
+                throw new Error('Failed to fetch student class information');
+            }
+            
+            const studentClassData = await studentClassResponse.json();
+            console.log(studentClassData);
+            if (studentClassData) {
+                // Set class and section from the student's data
+                setSelectedClassId(studentClassData.class._id);
+                setSelectedSectionId(studentClassData.section._id);
+                setSelectedStudentId(studentId);
+            } else {
+                toast.error('No class/section found for this student');
+            }
+        } catch (error) {
+            console.error('Error fetching student details:', error);
+            toast.error('Failed to load student details');
+        }
+    };
+
+    // Update the useEffect that sets the user type
     useEffect(() => {
         try {
             const userRole = localStorage.getItem('userRole');
             
+            // Get user ID from token
+            const userId = getUserIdFromToken();
+            
+            // Set user type based on role
             if (userRole) {
                 if (userRole === 'ADMIN' || userRole === 'STAFF') {
                     setUserType('teacher');
+                    
+                    // For staff, we might need their ID for certain operations
+                    if (userId) {
+                        // Store staff ID if needed for future use
+                        // You can add state for this if required
+                    }
                 } else if (userRole === 'STUDENT') {
                     setUserType('student');
-                    // const studentId = localStorage.getItem('userId');
-                    // if (studentId) {
-                    //     setSelectedStudentId(studentId);
-                    // }
+                    
+                    if (userId) {
+                        // For students, automatically fetch their class and section
+                        fetchStudentDetails(userId);
+                    }
+                } else {
+                    console.log('Unrecognized role:', userRole);
                 }
-            } else {
-                console.log('No role found in localStorage');
             }
         } catch (error) {
             toast.error('Failed to get user role');
@@ -222,19 +275,44 @@ const ViewResults = () => {
         fetchAcademicYears();
     }, []);
 
-    // Add function to fetch subjects
+    // Modify the function to fetch subjects based on selected class and section
     const fetchSubjects = async () => {
         try {
-            const response = await fetch('/api/manage-subject');
+            // Only fetch subjects if both class and section are selected
+            if (!selectedClassId || !selectedSectionId) {
+                return;
+            }
+            
+            const params = new URLSearchParams({
+                classId: selectedClassId,
+                sectionId: selectedSectionId
+            });
+            
+            const response = await fetch(`/api/manage-subject/?${params}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch subjects');
             }
             const data = await response.json();
             setSubjects(data);
+            
+            // Reset selected subject when subjects change
+            setSelectedSubjectId('');
         } catch (error) {
             console.error('Error fetching subjects:', error);
+            toast.error('Failed to load subjects');
         }
     };
+
+    // Add a useEffect to fetch subjects when class or section changes
+    useEffect(() => {
+        if (selectedClassId && selectedSectionId) {
+            fetchSubjects();
+        } else {
+            // Clear subjects when class or section is not selected
+            setSubjects([]);
+            setSelectedSubjectId('');
+        }
+    }, [selectedClassId, selectedSectionId]);
 
     // Add function to fetch teachers
     const fetchTeachers = async () => {
@@ -265,13 +343,16 @@ const ViewResults = () => {
 
     const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedClassId(e.target.value);
+        setSelectedSectionId('');
         setSelectedStudentId('');
+        setSelectedSubjectId('');
         setResults([]);
     };
 
     const handleSectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedSectionId(e.target.value);
         setSelectedStudentId('');
+        setSelectedSubjectId('');
         setResults([]);
     };
 
@@ -281,10 +362,20 @@ const ViewResults = () => {
         setHasFetchedResults(false);
     };
 
-    // Modify the fetchResults function to also ensure we have subjects and teachers
+    // Modify the fetchResults function to handle both student and teacher cases
     const fetchResults = async () => {
-        if (!selectedStudentId || !selectedClassId || !selectedSectionId) {
-            toast.error('Please select class, section, and student first');
+        if (userType === 'student') {
+            if (!selectedStudentId || !selectedClassId || !selectedSectionId) {
+                toast.error('Please select class, section, and student first');
+                return;
+            }
+        } else if (userType === 'teacher') {
+            if (!selectedClassId || !selectedSectionId || !selectedSubjectId) {
+                toast.error('Please select class, section, and subject first');
+                return;
+            }
+        } else {
+            toast.error('Please select user type first');
             return;
         }
 
@@ -292,20 +383,41 @@ const ViewResults = () => {
         setHasFetchedResults(true);
         
         try {
-            const params = new URLSearchParams({
-                studentId: selectedStudentId,
-                classId: selectedClassId,
-                sectionId: selectedSectionId
-            });
+            if (userType === 'student') {
+                // Fetch results for a specific student
+                const params = new URLSearchParams({
+                    studentId: selectedStudentId,
+                    classId: selectedClassId,
+                    sectionId: selectedSectionId
+                });
 
-            const response = await fetch(`/api/manage-result/?${params}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch results');
+                const response = await fetch(`/api/manage-result/?${params}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch results');
+                }
+
+                const data = await response.json();
+                console.log(data);
+                setResults(data);
+            } else {
+                // Fetch results for all students for a specific subject
+                const params = new URLSearchParams({
+                    classId: selectedClassId,
+                    sectionId: selectedSectionId,
+                    subjectId: selectedSubjectId
+                });
+
+                const response = await fetch(`/api/manage-result/?${params}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch results');
+                }
+
+                const data = await response.json();
+                console.log("All student results:", data);
+                setAllStudentResults(data);
+                // Clear single student results
+                setResults([]);
             }
-
-            const data = await response.json();
-            console.log(data);
-            setResults(data);
             
             // Ensure we have the latest subjects and teachers
             if (subjects.length === 0) {
@@ -365,95 +477,138 @@ const ViewResults = () => {
                             </select>
                         </div>
 
-                        {/* User Type Selection */}
+                        {/* User Type Selection - Hidden now that it's automatically determined */}
+                        {/* 
                         <div className="form-control w-full">
                             <label className="label">
-                                <span className="label-text text-base-content">Select User Type</span>
+                                <span className="label-text text-base-content">User Type</span>
                             </label>
                             <select
                                 className="select select-bordered w-full bg-base-100 text-base-content"
                                 value={userType}
                                 onChange={handleUserTypeChange}
+                                disabled={true}
                             >
                                 <option value="">Select User Type</option>
                                 <option value="student">Student</option>
                                 <option value="teacher">Teacher</option>
                             </select>
                         </div>
+                        */}
 
-                        {/* Class Selection */}
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text text-base-content">Select Class</span>
-                            </label>
-                            <select
-                                className="select select-bordered w-full bg-base-100 text-base-content"
-                                value={selectedClassId}
-                                onChange={handleClassChange}
-                                disabled={!userType}
-                            >
-                                <option value="">Select Class</option>
-                                {classes.map(cls => (
-                                    <option key={cls._id} value={cls._id} className="text-base-content bg-base-100">
-                                        {cls.classNumber}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Section Selection */}
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text text-base-content">Select Section</span>
-                            </label>
-                            <select
-                                className="select select-bordered w-full bg-base-100 text-base-content"
-                                value={selectedSectionId}
-                                onChange={handleSectionChange}
-                                disabled={!userType}
-                            >
-                                <option value="">Select Section</option>
-                                {sections.map(section => (
-                                    <option key={section._id} value={section._id} className="text-base-content bg-base-100">
-                                        {section.section}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text text-base-content">Select Student</span>
-                            </label>
-                            <div className="relative">
+                        {/* Class Selection - Only shown for teachers */}
+                        {userType !== 'student' && (
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Select Class</span>
+                                </label>
                                 <select
                                     className="select select-bordered w-full bg-base-100 text-base-content"
-                                    value={selectedStudentId}
-                                    onChange={handleUserChange}
-                                    disabled={!selectedSectionId}
+                                    value={selectedClassId}
+                                    onChange={handleClassChange}
+                                    disabled={!userType}
                                 >
-                                    <option value="">Select Student</option>
-                                    {students.map(student => (
-                                        <option key={student._id} value={student._id} className="text-base-content bg-base-100">
-                                            {student.firstName} {student.lastName}
+                                    <option value="">Select Class</option>
+                                    {classes.map(cls => (
+                                        <option key={cls._id} value={cls._id} className="text-base-content bg-base-100">
+                                            {cls.classNumber}
                                         </option>
                                     ))}
                                 </select>
-                                {isLoading && !selectedStudentId && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <span className="loading loading-spinner loading-sm text-primary"></span>
-                                    </div>
-                                )}
                             </div>
-                        </div>
+                        )}
+
+                        {/* Section Selection - Only shown for teachers */}
+                        {userType !== 'student' && (
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Select Section</span>
+                                </label>
+                                <select
+                                    className="select select-bordered w-full bg-base-100 text-base-content"
+                                    value={selectedSectionId}
+                                    onChange={handleSectionChange}
+                                    disabled={!userType}
+                                >
+                                    <option value="">Select Section</option>
+                                    {sections.map(section => (
+                                        <option key={section._id} value={section._id} className="text-base-content bg-base-100">
+                                            {section.section}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {/* Conditional: Show either Subject or Student dropdown based on userType */}
+                        {userType === 'teacher' ? (
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Select Subject</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        className="select select-bordered w-full bg-base-100 text-base-content"
+                                        value={selectedSubjectId}
+                                        onChange={(e) => {
+                                            setSelectedSubjectId(e.target.value);
+                                            setAllStudentResults([]);
+                                            setHasFetchedResults(false);
+                                        }}
+                                        disabled={!selectedSectionId}
+                                    >
+                                        <option value="">Select Subject</option>
+                                        {subjects.map(subject => (
+                                            <option key={subject._id} value={subject._id} className="text-base-content bg-base-100">
+                                                {subject.subject}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {isLoading && !selectedSubjectId && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <span className="loading loading-spinner loading-sm text-primary"></span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : userType === 'student' ? (
+                            // For students, don't show any additional selection field
+                            null
+                        ) : (
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Select Student</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        className="select select-bordered w-full bg-base-100 text-base-content"
+                                        value={selectedStudentId}
+                                        onChange={handleUserChange}
+                                        disabled={!selectedSectionId}
+                                    >
+                                        <option value="">Select Student</option>
+                                        {students.map(student => (
+                                            <option key={student._id} value={student._id} className="text-base-content bg-base-100">
+                                                {student.firstName} {student.lastName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {isLoading && !selectedStudentId && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <span className="loading loading-spinner loading-sm text-primary"></span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Results Table */}
-                    {isLoading && selectedStudentId ? (
+                    {/* Results Table (display one of two different tables based on the user type) */}
+                    {isLoading ? (
                         <div className="flex justify-center my-8">
                             <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
                         </div>
-                    ) : results.length > 0 ? (
+                    ) : userType === 'student' && results.length > 0 ? (
                         <div className="overflow-x-auto">
                             <table className="table w-full">
                                 <thead>
@@ -486,7 +641,41 @@ const ViewResults = () => {
                                 </tbody>
                             </table>
                         </div>
-                    ) : selectedStudentId && hasFetchedResults ? (
+                    ) : userType === 'teacher' && allStudentResults.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="table w-full">
+                                <thead>
+                                    <tr className="text-base-content">
+                                        <th className="text-base-content">Student Name</th>
+                                        <th className="text-base-content">Exam Date</th>
+                                        <th className="text-base-content">Subject</th>
+                                        <th className="text-base-content">Total Marks</th>
+                                        <th className="text-base-content">Status</th>
+                                        <th className="text-base-content">Marks Obtained</th>
+                                        <th className="text-base-content">Percentage</th>
+                                        <th className="text-base-content">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {allStudentResults.flatMap((resultSet) => 
+                                        resultSet.results.map((studentResult: any, index: number) => (
+                                            <tr key={`${resultSet._id}-${studentResult._id}`} className="text-base-content">
+                                                <td>{studentResult.studentId.firstName + " " + studentResult.studentId.lastName}</td>
+                                                <td>{new Date(resultSet.examDate).toLocaleDateString()}</td>
+                                                <td>{getSubjectName(resultSet.subjectId)}</td>
+                                                <td>{resultSet.totalMarks}</td>
+                                                <td>{studentResult.present ? 'Present' : 'Absent'}</td>
+                                                <td>{studentResult.present ? studentResult.marks : 'N/A'}</td>
+                                                <td>{studentResult.present && studentResult.percentage !== null ? `${studentResult.percentage.toFixed(2)}%` : 'N/A'}</td>
+                                                <td>{studentResult.present && studentResult.grade ? studentResult.grade : 'N/A'}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : selectedStudentId && hasFetchedResults || 
+                       (userType === 'teacher' && selectedSubjectId && hasFetchedResults) ? (
                         <div className="text-center my-8">
                             <p className="text-lg text-base-content">No results found for the selected criteria.</p>
                         </div>
@@ -498,7 +687,8 @@ const ViewResults = () => {
                             variant="primary"
                             outline
                             onClick={fetchResults}
-                            disabled={!selectedStudentId}
+                            disabled={(userType === 'student' && !selectedStudentId) || 
+                                      (userType === 'teacher' && !selectedSubjectId)}
                         >
                             {isLoading ? (
                                 <>

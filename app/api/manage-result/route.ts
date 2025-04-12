@@ -47,6 +47,7 @@ export async function GET(request: Request) {
     const studentId = searchParams.get("studentId");
     const classId = searchParams.get("classId");
     const sectionId = searchParams.get("sectionId");
+    const subjectId = searchParams.get("subjectId");
 
     if (id) {
       const result = await Result.findById(id)
@@ -70,8 +71,6 @@ export async function GET(request: Request) {
         "results.studentId": studentId,
       }).select("-__v");
 
-      console.log(results);
-      // Transform the results with populated data
       const formattedResults = results.map((result) => {
         const studentResult = result.results.find(
           (r: any) => r.studentId.toString() === studentId
@@ -91,6 +90,21 @@ export async function GET(request: Request) {
       });
 
       return NextResponse.json(formattedResults);
+    } else if (classId && sectionId && subjectId) {
+      // Find results for a specific subject in a class and section
+      const results = await Result.find({
+        classId: classId,
+        sectionId: sectionId,
+        isActive: true,
+        subjectId: subjectId,
+      })
+      .populate({
+        path: 'results.studentId',
+        model: 'users'
+      })
+      .select("-__v");
+
+      return NextResponse.json(results);
     }
 
     // If no specific query parameters are provided
