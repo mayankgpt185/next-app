@@ -23,7 +23,7 @@ export default function ViewAttendancePage() {
     const [editedStudents, setEditedStudents] = useState<{ _id: string, name: string, status: string }[]>([]);
     const [hasChanges, setHasChanges] = useState(false);
     const [userRole, setUserRole] = useState<string | null>(null);
-
+    const [userId, setUserId] = useState<string | null>(null);
     // Add this function to decode JWT token and get user ID
     const getUserIdFromToken = () => {
         try {
@@ -31,7 +31,10 @@ export default function ViewAttendancePage() {
             if (!token) return null;
             const payload = token.split('.')[1];
             const decodedPayload = JSON.parse(atob(payload));
-            return decodedPayload.id;
+            const userRole = decodedPayload.role;
+            setUserRole(userRole);
+            setUserId(decodedPayload.id);
+            // return decodedPayload.id;
         } catch (error) {
             console.error('Error extracting user ID from token:', error);
             return null;
@@ -49,7 +52,7 @@ export default function ViewAttendancePage() {
         const fetchClassesAndSections = async () => {
             try {
                 setIsLoadingClassSections(true);
-                
+
                 const [classesResponse, sectionsResponse] = await Promise.all([
                     fetch('/api/classes'),
                     fetch('/api/sections')
@@ -64,7 +67,7 @@ export default function ViewAttendancePage() {
 
                 // Create combined class-section options
                 const combinedOptions: { id: string, label: string, classId: string, sectionId: string }[] = [];
-                
+
                 classesData.forEach((cls: any) => {
                     sectionsData.forEach((section: any) => {
                         combinedOptions.push({
@@ -75,16 +78,12 @@ export default function ViewAttendancePage() {
                         });
                     });
                 });
-                
+
                 setClassSections(combinedOptions);
-                
-                // Check for student role and set class-section
-                const userRole = localStorage.getItem('userRole');
-                if (userRole === UserRole.STUDENT) {
-                    const userId = getUserIdFromToken();
-                    if (userId) {
-                        await fetchStudentDetails(userId, combinedOptions);
-                    }
+
+                getUserIdFromToken();
+                if (userId) {
+                    await fetchStudentDetails(userId, combinedOptions);
                 }
             } catch (error) {
                 console.error('Error fetching classes and sections:', error);
@@ -99,20 +98,20 @@ export default function ViewAttendancePage() {
             try {
                 // Get the student's class and section from student-class API
                 const studentClassResponse = await fetch(`/api/student-class?studentId=${studentId}`);
-                
+
                 if (!studentClassResponse.ok) {
                     throw new Error('Failed to fetch student class information');
                 }
-                
+
                 const studentClassData = await studentClassResponse.json();
-                
+
                 if (studentClassData && studentClassData.class && studentClassData.section) {
                     // Find matching class-section in our options
                     const matchingOption = options.find(
-                        option => option.classId === studentClassData.class._id && 
-                                  option.sectionId === studentClassData.section._id
+                        option => option.classId === studentClassData.class._id &&
+                            option.sectionId === studentClassData.section._id
                     );
-                    
+
                     if (matchingOption) {
                         setSelectedClassSection(matchingOption.id);
                     }
@@ -141,7 +140,7 @@ export default function ViewAttendancePage() {
             try {
                 setIsLoadingSubjects(true);
                 const response = await fetch(`/api/manage-subject?classId=${classId}&sectionId=${sectionId}`);
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch subjects');
                 }
@@ -188,34 +187,34 @@ export default function ViewAttendancePage() {
         try {
             setIsLoadingAttendance(true);
             setHasSearched(true);
-            
+
             const [classId, sectionId] = selectedClassSection.split('-');
-            
+
             const response = await fetch(`/api/attendance?classId=${classId}&sectionId=${sectionId}&subjectId=${selectedSubject}&attendanceDate=${attendanceDate}`);
-            
+
             if (!response.ok) {
                 throw new Error('Failed to fetch attendance records');
             }
-            
+
             const data = await response.json();
-            
+
             if (data && data.length > 0) {
                 // Process attendance data
                 setAttendanceRecords(data);
-                
+
                 // Get student details for the attendance records
-                const studentIds = data.flatMap((record: any) => 
+                const studentIds = data.flatMap((record: any) =>
                     record.studentAttendance.map((student: any) => student.studentId)
                 );
-                
+
                 if (studentIds.length > 0) {
                     const studentsResponse = await fetch(`/api/manage-staff?role=STUDENT`);
                     if (!studentsResponse.ok) {
                         throw new Error('Failed to fetch student details');
                     }
-                    
+
                     const studentsData = await studentsResponse.json();
-                    
+
                     // Map student IDs to names and attendance status
                     const studentAttendance = data[0].studentAttendance.map((attendance: any) => {
                         const student = studentsData.find((s: any) => s._id === attendance.studentId);
@@ -225,9 +224,9 @@ export default function ViewAttendancePage() {
                             status: attendance.status
                         };
                     });
-                    
+
                     setStudents(studentAttendance);
-                    
+
                     // Fetch staff information if available
                     if (data[0].staffId) {
                         try {
@@ -265,9 +264,9 @@ export default function ViewAttendancePage() {
 
     // Handle status change when editing
     const handleStatusChange = (studentId: string, newStatus: string) => {
-        setEditedStudents(prev => 
-            prev.map(student => 
-                student._id === studentId ? {...student, status: newStatus} : student
+        setEditedStudents(prev =>
+            prev.map(student =>
+                student._id === studentId ? { ...student, status: newStatus } : student
             )
         );
         setHasChanges(true);
@@ -282,7 +281,7 @@ export default function ViewAttendancePage() {
 
         try {
             const attendanceRecord = attendanceRecords[0];
-            
+
             // Create a complete updated attendance object
             const updatedAttendance = {
                 ...attendanceRecord,
@@ -292,7 +291,7 @@ export default function ViewAttendancePage() {
                 }))
             };
             debugger;
-            
+
             const response = await fetch(`/api/attendance?id=${attendanceRecord._id}`, {
                 method: 'PUT',
                 headers: {
@@ -300,11 +299,11 @@ export default function ViewAttendancePage() {
                 },
                 body: JSON.stringify(updatedAttendance),
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to update attendance');
             }
-            
+
             toast.success('Attendance updated successfully');
             setIsEditing(false);
             setStudents(editedStudents);
@@ -432,11 +431,11 @@ export default function ViewAttendancePage() {
                         hasSearched && (
                             <div className="mt-6">
                                 <h2 className="text-xl font-semibold mb-4 text-base-content">
-                                    {students.length > 0 
-                                        ? `Attendance Records (${new Date(attendanceDate).toLocaleDateString('en-GB', {day: '2-digit', month: 'long', year: 'numeric'})})` 
+                                    {students.length > 0
+                                        ? `Attendance Records (${new Date(attendanceDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })})`
                                         : 'No attendance records found!'}
                                 </h2>
-                                
+
                                 {students.length > 0 && (
                                     <div className="overflow-x-auto flex-1">
                                         <div className="flex justify-between items-center mb-4">
@@ -450,33 +449,33 @@ export default function ViewAttendancePage() {
                                             {userRole != UserRole.STUDENT && (
                                                 isEditing ? (
                                                     <div className="flex gap-2">
-                                                    <Button 
+                                                        <Button
+                                                            type="button"
+                                                            variant="success"
+                                                            outline
+                                                            onClick={saveAttendance}
+                                                            disabled={!hasChanges}
+                                                        >
+                                                            Save Changes
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="error"
+                                                            outline
+                                                            onClick={() => setIsEditing(false)}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
                                                         type="button"
-                                                        variant="success"
+                                                        variant="primary"
                                                         outline
-                                                        onClick={saveAttendance}
-                                                        disabled={!hasChanges}
+                                                        onClick={toggleEditMode}
                                                     >
-                                                        Save Changes
+                                                        Edit Attendance
                                                     </Button>
-                                                    <Button 
-                                                        type="button"
-                                                        variant="error"
-                                                        outline
-                                                        onClick={() => setIsEditing(false)}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <Button 
-                                                    type="button"
-                                                    variant="primary"
-                                                    outline
-                                                    onClick={toggleEditMode}
-                                                >
-                                                    Edit Attendance
-                                                </Button>
                                                 )
                                             )}
                                         </div>

@@ -71,7 +71,8 @@ const ViewResults = () => {
     const [allStudentResults, setAllStudentResults] = useState<any[]>([]);
     const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
     const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
-
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
     // Fetch classes on component mount
     useEffect(() => {
         const fetchClasses = async () => {
@@ -166,7 +167,11 @@ const ViewResults = () => {
             if (!token) return null;
             const payload = token.split('.')[1];
             const decodedPayload = JSON.parse(atob(payload));
-            return decodedPayload.id;
+            // const userRole = decodedPayload.role;
+            // const userId = decodedPayload.id;
+            setUserRole(decodedPayload.role);
+            setUserId(decodedPayload.id);
+            // return decodedPayload.id;
         } catch (error) {
             console.error('Error extracting user ID from token:', error);
             return null;
@@ -200,11 +205,9 @@ const ViewResults = () => {
 
     // Update the useEffect for user role detection to ensure the function is called
     useEffect(() => {
-        try {
-            const userRole = localStorage.getItem('userRole');
-            
+        try {            
             // Get user ID from token
-            const userId = getUserIdFromToken();
+            // const userId = getUserIdFromToken();
             
             // Set user type based on role
             if (userRole) {

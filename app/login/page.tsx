@@ -83,15 +83,6 @@ export default function LoginPage() {
         // Store auth data in localStorage
         if (responseData.token) {
           localStorage.setItem('token', responseData.token);
-          if (responseData.user?.role) {
-            localStorage.setItem('userRole', responseData.user.role);
-          }
-          if (responseData.user?.email) {
-            localStorage.setItem('userEmail', responseData.user.email);
-          }
-          if (responseData.user?.name) {
-            localStorage.setItem('name', responseData.user.name);
-          }
           window.dispatchEvent(new Event('auth-change'));
           document.cookie = `auth-token=${responseData.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
         }

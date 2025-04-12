@@ -17,6 +17,8 @@ const Sidebar = () => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,15 +29,45 @@ const Sidebar = () => {
     // Get data from localStorage (safely, in case of SSR)
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem('token');
-      const storedRole = localStorage.getItem('userRole');
-      const storedEmail = localStorage.getItem('userEmail');
-      const storedName = localStorage.getItem('name');
-      setToken(storedToken);
-      setUserRole(storedRole as UserRole);
-      setUserEmail(storedEmail);
-      setUserName(storedName);
+      if (storedToken) {
+        const decodedPayload = JSON.parse(atob(storedToken.split('.')[1]));
+        setUserRole(decodedPayload.role as UserRole);
+        setUserName(decodedPayload.name);
+        setUserEmail(decodedPayload.email);
+      }
     }
   }, []);
+
+  // Close the profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleProfileMenu = () => {
+    setShowProfileMenu(prev => !prev);
+  };
+
+  const handleLogout = () => {
+    // Clear localStorage and redirect to login page
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      router.push('/login');
+    }
+  };
+
+  const handleProfileClick = () => {
+    router.push('/profile');
+    setShowProfileMenu(false);
+  };
 
   // Function to check if a user can access a route
   const canAccessRoute = (route: string): boolean => {
@@ -265,20 +297,51 @@ const Sidebar = () => {
         {/* Footer */}
         {isExpanded ? (
           <div className="p-4 border-t border-base-200">
-            <Card className="bg-neutral-800 border-0 p-3 mb-3 hover:bg-neutral-700 transition-colors duration-200">
-              <div className="flex items-center space-x-3">
-                <img
-                  src='/images/mayank.jpg'
-                  alt="User"
-                  className="w-8 h-8 rounded-full"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white">{userName || 'N/A'}</span>
+            <div className="relative" ref={profileMenuRef}>
+              <Card 
+                className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 p-3 mb-3 cursor-pointer"
+                onClick={toggleProfileMenu}
+              >
+                <div className="flex items-center space-x-3">
+                  <img
+                    src='/images/mayank.jpg'
+                    alt="User"
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-800 dark:text-gray-200">{userName || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+              
+              {showProfileMenu && (
+                <div className="absolute bottom-full left-0 mb-2 w-full bg-base-100 rounded-md shadow-lg z-50 overflow-hidden border border-base-300">
+                  <ul className="py-1">
+                    <li>
+                      <button 
+                        onClick={handleProfileClick}
+                        className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-base-content"
+                      >
+                        <lucideReact.User className="w-4 h-4 mr-2" />
+                        Profile
+                      </button>
+                    </li>
+                    <li>
+                      <button 
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-error"
+                      >
+                        <lucideReact.LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+            
             <div className="join w-full mb-3">
               <button
                 onClick={() => setTheme('light')}
@@ -299,11 +362,40 @@ const Sidebar = () => {
         ) : (
           <div className="p-4 border-t border-base-200">
             <div className="flex flex-col items-center space-y-2">
-              <div className="avatar tooltip tooltip-right" data-tip={userName || 'N/A'}>
-                <div className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+              <div className="avatar tooltip tooltip-right relative" data-tip={userName || 'N/A'} ref={profileMenuRef}>
+                <div 
+                  className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 cursor-pointer"
+                  onClick={toggleProfileMenu}
+                >
                   <img src='/images/mayank.jpg' alt="User" />
                 </div>
+                
+                {showProfileMenu && (
+                  <div className="absolute top-0 left-full ml-2 bg-base-100 rounded-md shadow-lg z-50 w-32 overflow-hidden border border-base-300">
+                    <ul className="py-1">
+                      <li>
+                        <button 
+                          onClick={handleProfileClick}
+                          className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-base-content"
+                        >
+                          <lucideReact.User className="w-4 h-4 mr-2" />
+                          Profile
+                        </button>
+                      </li>
+                      <li>
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-error"
+                        >
+                          <lucideReact.LogOut className="w-4 h-4 mr-2" />
+                          Logout
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
+              
               <button
                 onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
                 className="btn btn-ghost btn-circle"
