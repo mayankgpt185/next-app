@@ -32,6 +32,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const approverId = searchParams.get("approverId");
+    const staffId = searchParams.get("staffId");
     if (id) {
       const leave = await Leave.findById(id)
         .where({ isActive: true })
@@ -47,6 +48,14 @@ export async function GET(request: Request) {
       return NextResponse.json(leave);
     } else if (approverId) {
       const leaves = await Leave.find({ approverId: approverId })
+        .populate("staffId")
+        .where({ isActive: true })
+        .select("-__v");
+
+      return NextResponse.json(leaves);
+    } else if (staffId) {
+      const leaves = await Leave.find({ staffId: staffId })
+        .populate("approverId")
         .populate("staffId")
         .where({ isActive: true })
         .select("-__v");

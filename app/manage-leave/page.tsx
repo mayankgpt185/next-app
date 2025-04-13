@@ -21,6 +21,7 @@ export default function ViewLeavePage() {
     const [currentAction, setCurrentAction] = useState<'approve' | 'cancel' | null>(null);
     const [currentApplicationId, setCurrentApplicationId] = useState<string | null>(null);
     const [currentApproverName, setCurrentApproverName] = useState('');
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
         // Get token from cookies or localStorage
@@ -38,9 +39,14 @@ export default function ViewLeavePage() {
                 const payload = token.split('.')[1];
                 const decodedData = JSON.parse(atob(payload));
                 
-                // Set the user ID from token as the approver
+                // Set the user ID from token
                 if (decodedData.id) {
                     setSelectedApproverId(decodedData.id);
+                }
+                
+                // Also get the user role for conditional display logic
+                if (decodedData.role) {
+                    setUserRole(decodedData.role);
                 }
             } catch (error) {
                 console.error('Error decoding token:', error);
@@ -53,7 +59,7 @@ export default function ViewLeavePage() {
         // Fetch approvers for displaying name
         const fetchApprovers = async () => {
             try {
-                const response = await fetch('/api/manage-staff?role=STAFF');
+                const response = await fetch('/api/manage-staff?role=ADMIN');
                 if (!response.ok) {
                     throw new Error('Failed to fetch approvers');
                 }
@@ -79,12 +85,22 @@ export default function ViewLeavePage() {
     }, [approvers, selectedApproverId]);
 
     useEffect(() => {
-        if (!selectedApproverId) return;
+        if (!selectedApproverId || !userRole) return;
 
         const fetchLeaveApplications = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch(`/api/leave?approverId=${selectedApproverId}`);
+                let url;
+                
+                // If user is STAFF, fetch their leave applications
+                // If user is ADMIN, fetch leave applications they need to approve
+                if (userRole === 'STAFF') {
+                    url = `/api/leave?staffId=${selectedApproverId}`;
+                } else {
+                    url = `/api/leave?approverId=${selectedApproverId}`;
+                }
+                
+                const response = await fetch(url);
                 
                 if (!response.ok) {
                     throw new Error('Failed to fetch leave applications');
@@ -101,7 +117,7 @@ export default function ViewLeavePage() {
         };
 
         fetchLeaveApplications();
-    }, [selectedApproverId]);
+    }, [selectedApproverId, userRole]);
 
     const handleApprove = async (id: string) => {
         try {
@@ -161,16 +177,24 @@ export default function ViewLeavePage() {
         <div className="flex flex-col w-full p-6 bg-base-100 min-h-screen">
             <div className="mb-4">
                 <div className="flex items-center">
-                    <h3 className="text-lg font-medium text-base-content">Approver:</h3>
-                    <span className="ml-2 font-semibold text-primary">
-                        {currentApproverName || 'Loading...'}
-                    </span>
+                    {userRole === 'ADMIN' ? (
+                        <>
+                            <h3 className="text-lg font-medium text-base-content">Approver:</h3>
+                            <span className="ml-2 font-semibold text-primary">
+                                {currentApproverName || 'Loading...'}
+                            </span>
+                        </>
+                    ) : (
+                        <h3 className="text-lg font-medium text-base-content">Your Leave Applications</h3>
+                    )}
                 </div>
             </div>
 
             <div className="card bg-base-200 shadow-xl">
                 <div className="card-body">
-                    <h2 className="card-title text-2xl font-bold text-base-content mb-6">Leave Applications</h2>
+                    <h2 className="card-title text-2xl font-bold text-base-content mb-6">
+                        {userRole === 'ADMIN' ? 'Leave Applications' : 'My Leave Requests'}
+                    </h2>
 
                     {isLoading ? (
                         <div className="flex justify-center items-center mt-6 py-12">
@@ -207,7 +231,7 @@ export default function ViewLeavePage() {
                                                 {new Date(application.leaveToDate).toLocaleDateString('en-GB')}
                                             </td>
                                             <td className="text-center">
-                                                {application.status === 'Pending' ? (
+                                                {application.status === 'Pending' && userRole === 'ADMIN' ? (
                                                     <div className="flex justify-center space-x-2">
                                                         <button 
                                                             className="btn btn-success btn-sm"

@@ -30,8 +30,12 @@ export default function ManageStaffPage() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const storedRole = localStorage.getItem('userRole');
-            setUserRole(storedRole);
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const payload = token.split('.')[1];
+            const decodedPayload = JSON.parse(atob(payload));
+            const userRole = decodedPayload.role;
+            setUserRole(userRole);
         }
 
         const fetchStaff = async () => {
@@ -98,7 +102,7 @@ export default function ManageStaffPage() {
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-base-content">Manage Staff</h1>
-                {userRole === 'STAFF' && (
+                {userRole === 'ADMIN' && (
                     <Link href="/manage-staff/add">
                         <Button variant="primary" type="submit" outline>
                             <Plus className="w-4 h-4 mr-2" />
