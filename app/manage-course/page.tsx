@@ -31,8 +31,12 @@ export default function ManageCoursePage() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const storedRole = localStorage.getItem('userRole');
-            setUserRole(storedRole);
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const payload = token.split('.')[1];
+            const decodedPayload = JSON.parse(atob(payload));
+            const userRole = decodedPayload.role;
+            setUserRole(userRole);
         }
 
         const fetchCourse = async () => {

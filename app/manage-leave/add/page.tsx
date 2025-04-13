@@ -10,8 +10,8 @@ export default function AddLeavePage() {
     const [leaveToDate, setLeaveToDate] = useState('');
     const [selectedStaffId, setSelectedStaffId] = useState('');
     const [leaveReason, setLeaveReason] = useState('');
-    const [staffList, setStaffList] = useState<StudentMemberDTO[]>([]);
-    const [isLoadingStaffList, setIsLoadingStaffList] = useState(false);
+    const [adminList, setAdminList] = useState<StudentMemberDTO[]>([]);
+    const [isLoadingAdminList, setIsLoadingAdminList] = useState(false);
     const [selectedApproverId, setSelectedApproverId] = useState('');
 
     // Add this function to get user ID from token
@@ -28,17 +28,17 @@ export default function AddLeavePage() {
         }
     };
 
-    // Update the useEffect for fetching staff list to also set the staff ID
+    // Update the useEffect to fetch admin users instead of staff
     useEffect(() => {
-        const fetchStaffList = async () => {
+        const fetchAdminList = async () => {
             try {
-                setIsLoadingStaffList(true);
-                const response = await fetch('/api/manage-staff?role=STAFF');
+                setIsLoadingAdminList(true);
+                const response = await fetch('/api/manage-staff?role=ADMIN');
                 if (!response.ok) {
-                    throw new Error('Failed to fetch staff list');
+                    throw new Error('Failed to fetch admin list');
                 }
                 const data = await response.json();
-                setStaffList(data);
+                setAdminList(data);
                 
                 // Get user ID from token and set as selected staff if not already set
                 const userId = getUserIdFromToken();
@@ -46,14 +46,14 @@ export default function AddLeavePage() {
                     setSelectedStaffId(userId);
                 }
             } catch (error) {
-                console.error('Error fetching staff list:', error);
-                toast.error('Failed to load staff list');
+                console.error('Error fetching admin list:', error);
+                toast.error('Failed to load admin list');
             } finally {
-                setIsLoadingStaffList(false);
+                setIsLoadingAdminList(false);
             }
         };
 
-        fetchStaffList();
+        fetchAdminList();
     }, [selectedStaffId]);
 
     // Handle leave application submission
@@ -153,40 +153,6 @@ export default function AddLeavePage() {
                             />
                         </div>
 
-                        {/* Staff Selection */}
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text text-base-content">Staff Member</span>
-                            </label>
-                            <div className="relative">
-                                {/* Display selected staff member's name */}
-                                {staffList.length > 0 && selectedStaffId ? (
-                                    <div className="input input-bordered w-full bg-base-100 text-base-content flex items-center h-12 px-4">
-                                        {staffList.find(staff => staff._id.toString() === selectedStaffId.toString())?.firstName || ''} {staffList.find(staff => staff._id.toString() === selectedStaffId.toString())?.lastName || ''}
-                                    </div>
-                                ) : (
-                                    <select
-                                        className="select select-bordered w-full bg-base-100 text-base-content"
-                                        value={selectedStaffId}
-                                        onChange={(e) => setSelectedStaffId(e.target.value)}
-                                        disabled={true}
-                                    >
-                                        {/* <option value="">Loading staff member...</option> */}
-                                        {staffList.map((staff) => (
-                                            <option key={staff._id} value={staff._id} className="text-base-content bg-base-100">
-                                                {staff.firstName} {staff.lastName}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
-                                {isLoadingStaffList && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <span className="loading loading-spinner loading-sm text-primary"></span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Approver Selection */}
                         <div className="form-control w-full">
                             <label className="label">
@@ -197,35 +163,35 @@ export default function AddLeavePage() {
                                     className="select select-bordered w-full bg-base-100 text-base-content"
                                     value={selectedApproverId}
                                     onChange={(e) => setSelectedApproverId(e.target.value)}
-                                    disabled={isLoadingStaffList}
+                                    disabled={isLoadingAdminList}
                                 >
                                     <option value="">Select Approver</option>
-                                    {staffList.map((staff) => (
-                                        <option key={staff._id} value={staff._id} className="text-base-content bg-base-100">
-                                            {staff.firstName} {staff.lastName}
+                                    {adminList.map((admin) => (
+                                        <option key={admin._id} value={admin._id} className="text-base-content bg-base-100">
+                                            {admin.firstName} {admin.lastName}
                                         </option>
                                     ))}
                                 </select>
-                                {isLoadingStaffList && (
+                                {isLoadingAdminList && (
                                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                                         <span className="loading loading-spinner loading-sm text-primary"></span>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    </div>
-
-                    {/* Reason for Leave */}
-                    <div className="form-control w-full md:w-1/2 mt-4">
-                        <label className="label">
-                            <span className="label-text text-base-content">Reason for Leave</span>
-                        </label>
-                        <textarea
-                            className="textarea textarea-bordered h-32 bg-base-100 text-base-content"
-                            placeholder="Please provide a reason for your leave request"
-                            value={leaveReason}
-                            onChange={(e) => setLeaveReason(e.target.value)}
-                        ></textarea>
+                        
+                        {/* Reason for Leave - moved to be next to Approver */}
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className="label-text text-base-content">Reason for Leave</span>
+                            </label>
+                            <textarea
+                                className="textarea textarea-bordered h-24 bg-base-100 text-base-content"
+                                placeholder="Please provide a reason for your leave request"
+                                value={leaveReason}
+                                onChange={(e) => setLeaveReason(e.target.value)}
+                            ></textarea>
+                        </div>
                     </div>
 
                     <div className="flex justify-end mt-6">

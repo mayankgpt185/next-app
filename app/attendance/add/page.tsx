@@ -54,6 +54,30 @@ export default function AttendanceAddPage() {
                         };
                     });
                     setAcademicYears(formattedYears);
+                    
+                    // Set default academic year
+                    if (formattedYears.length > 0) {
+                        // Get current date
+                        const currentDate = new Date();
+                        
+                        // Find academic year containing current date
+                        const currentAcademicYear = formattedYears.find((year: any) => {
+                            const startDate = new Date(year.startDate);
+                            const endDate = new Date(year.endDate);
+                            return currentDate >= startDate && currentDate <= endDate;
+                        });
+                        
+                        if (currentAcademicYear) {
+                            // Set the academic year that contains the current date
+                            setSelectedYear(currentAcademicYear.id);
+                        } else {
+                            // Fallback: Sort by startDate in descending order and use the most recent
+                            const sortedYears = [...formattedYears].sort((a, b) =>
+                                new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+                            );
+                            setSelectedYear(sortedYears[0].id);
+                        }
+                    }
                 } else {
                     setAcademicYears([]);
                 }

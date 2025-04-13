@@ -34,7 +34,7 @@ export default function ViewAttendancePage() {
             const userRole = decodedPayload.role;
             setUserRole(userRole);
             setUserId(decodedPayload.id);
-            // return decodedPayload.id;
+            return decodedPayload.id;
         } catch (error) {
             console.error('Error extracting user ID from token:', error);
             return null;
@@ -81,7 +81,7 @@ export default function ViewAttendancePage() {
 
                 setClassSections(combinedOptions);
 
-                getUserIdFromToken();
+                const userId = getUserIdFromToken();
                 if (userId) {
                     await fetchStudentDetails(userId, combinedOptions);
                 }
