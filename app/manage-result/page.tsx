@@ -160,79 +160,58 @@ const ViewResults = () => {
         }
     }, [selectedStudentId, userType, selectedClassId, selectedSectionId]);
 
-    // Add this function to decode JWT token and get user ID
-    const getUserIdFromToken = () => {
+    // Modify this function to just return the data, not set state
+    const getUserInfoFromToken = () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) return null;
             const payload = token.split('.')[1];
             const decodedPayload = JSON.parse(atob(payload));
-            // const userRole = decodedPayload.role;
-            // const userId = decodedPayload.id;
-            setUserRole(decodedPayload.role);
-            setUserId(decodedPayload.id);
-            // return decodedPayload.id;
+            return {
+                role: decodedPayload.role,
+                id: decodedPayload.id
+            };
         } catch (error) {
-            console.error('Error extracting user ID from token:', error);
+            console.error('Error extracting user info from token:', error);
             return null;
         }
     };
 
-    // Add this function to fetch student details
-    const fetchStudentDetails = async (studentId: string) => {
-        try {
-            // First get the student's class and section from student-class API
-            const studentClassResponse = await fetch(`/api/student-class?studentId=${studentId}`);
-            
-            if (!studentClassResponse.ok) {
-                throw new Error('Failed to fetch student class information');
-            }
-            
-            const studentClassData = await studentClassResponse.json();
-            if (studentClassData) {
-                // Set class and section from the student's data
-                setSelectedClassId(studentClassData.class._id);
-                setSelectedSectionId(studentClassData.section._id);
-                setSelectedStudentId(studentId);
-            } else {
-                toast.error('No class/section found for this student');
-            }
-        } catch (error) {
-            console.error('Error fetching student details:', error);
-            toast.error('Failed to load student details');
-        }
-    };
-
-    // Update the useEffect for user role detection to ensure the function is called
+    // Update the useEffect for user role detection
     useEffect(() => {
         try {            
-            // Get user ID from token
-            // const userId = getUserIdFromToken();
-            
-            // Set user type based on role
-            if (userRole) {
-                if (userRole === 'ADMIN' || userRole === 'STAFF') {
-                    setUserType('teacher');
-                    
-                    // For staff, we might need their ID for certain operations
-                    if (userId) {
-                        // Store staff ID if needed for future use
-                        // You can add state for this if required
-                    }
-                } else if (userRole === 'STUDENT') {
-                    setUserType('student');
-                    
-                    if (userId) {
-                        // For students, automatically fetch their class and section
-                        fetchStudentDetails(userId);
-                    }
-                }
+            // Get user info from token and set states
+            const userInfo = getUserInfoFromToken();
+            if (userInfo) {
+                setUserRole(userInfo.role);
+                setUserId(userInfo.id);
+            } else {
+                toast.error('Not authenticated');
+                router.push('/login');
             }
         } catch (error) {
-            toast.error('Failed to get user role');
+            toast.error('Failed to get user information');
             router.push('/login');
         }
-    }, []);
+    }, [router]);
+
+    // Add a separate useEffect that responds to userRole changes
+    useEffect(() => {
+        if (userRole) {
+            console.log("userRole", userRole);
+            
+            if (userRole === 'ADMIN' || userRole === 'STAFF') {
+                setUserType('teacher');
+            } else if (userRole === 'STUDENT') {
+                setUserType('student');
+                
+                if (userId) {
+                    // For students, automatically fetch their class and section
+                    fetchStudentDetails(userId);
+                }
+            }
+        }
+    }, [userRole, userId]);
     
     // Modify the academic year useEffect
     useEffect(() => {
@@ -449,6 +428,31 @@ const ViewResults = () => {
     const getTeacherName = (teacherId: string) => {
         const teacher = teachers.find(t => t._id === teacherId);
         return teacher ? teacher.firstName + " " + teacher.lastName : teacherId;
+    };
+
+    // Add this function to fetch student details
+    const fetchStudentDetails = async (studentId: string) => {
+        try {
+            // First get the student's class and section from student-class API
+            const studentClassResponse = await fetch(`/api/student-class?studentId=${studentId}`);
+            
+            if (!studentClassResponse.ok) {
+                throw new Error('Failed to fetch student class information');
+            }
+            
+            const studentClassData = await studentClassResponse.json();
+            if (studentClassData) {
+                // Set class and section from the student's data
+                setSelectedClassId(studentClassData.class._id);
+                setSelectedSectionId(studentClassData.section._id);
+                setSelectedStudentId(studentId);
+            } else {
+                toast.error('No class/section found for this student');
+            }
+        } catch (error) {
+            console.error('Error fetching student details:', error);
+            toast.error('Failed to load student details');
+        }
     };
 
     return (
