@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Sidebar from '../components/sidebar/sidebar';
-
+import Navbar from '../components/navbar/navbar';
 export default function ManageStaffLayout({
     children,
 }: {
@@ -23,7 +23,8 @@ export default function ManageStaffLayout({
         <div className="flex min-h-screen bg-gray-100 dark:bg-neutral-900">
             <Sidebar />
             <div className="flex-1">
-                <main className="min-h-screen">
+                <Navbar />
+                <main className="min-h-screen pt-16">
                     {children}
                 </main>
             </div>

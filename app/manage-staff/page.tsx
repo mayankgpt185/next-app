@@ -100,21 +100,9 @@ export default function ManageStaffPage() {
 
     return (
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-base-content">Manage Staff</h1>
-                {userRole === 'ADMIN' && (
-                    <Link href="/manage-staff/add">
-                        <Button variant="primary" type="submit" outline>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Staff
-                        </Button>
-                    </Link>
-                )}
-            </div>
-
             <div className="card bg-base-200 shadow-xl flex-1">
                 <div className="card-body flex flex-col">
-                    <div className="mb-6">
+                    <div className="mb-6 flex justify-between items-center">
                         <div className="relative w-1/3">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/60 w-5 h-5" />
                             <input
@@ -125,6 +113,14 @@ export default function ManageStaffPage() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
+                        {userRole === 'ADMIN' && (
+                            <Link href="/manage-staff/add">
+                                <Button variant="primary" type="submit" outline>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Staff
+                                </Button>
+                            </Link>
+                        )}
                     </div>
 
                     <div className="overflow-x-auto flex-1">

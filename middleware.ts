@@ -4,7 +4,7 @@ import { verifyToken } from './lib/auth';
 import { hasAccess } from './lib/role';
 
 // Define public routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/api/**', '/api/auth/login', '/api/classes', 'api/sections', '/api/session', '/api/classes', '/api/sections', '/api/session', '/images'];
+const publicRoutes = ['/login', '/signup', '/api/auth/login', '/api/classes', 'api/sections', '/api/session', '/api/classes', '/api/sections', '/api/session', '/images'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -45,9 +45,9 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set('user', JSON.stringify(userData));
     
     // For API routes, ensure Authorization header is set
-    // if (pathname.startsWith('/api/')) {
-    //   requestHeaders.set('Authorization', `Bearer ${token}`);
-    // }
+    if (pathname.startsWith('/api/')) {
+      requestHeaders.set('Authorization', `Bearer ${token}`);
+    }
 
     return NextResponse.next({
       headers: requestHeaders,

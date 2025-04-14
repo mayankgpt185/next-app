@@ -82,7 +82,9 @@ export default function ViewAttendancePage() {
                 setClassSections(combinedOptions);
 
                 const userId = getUserIdFromToken();
-                if (userId) {
+                
+                // Only fetch student details if the user is a student
+                if (userId && userRole === 'STUDENT') {
                     await fetchStudentDetails(userId, combinedOptions);
                 }
             } catch (error) {

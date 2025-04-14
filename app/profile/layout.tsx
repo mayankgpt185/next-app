@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from '../components/sidebar/sidebar';
 import Navbar from '../components/navbar/navbar';
-export default function ManageStudentLayout({
+
+export default function ProfileLayout({
     children,
 }: {
     children: React.ReactNode;
@@ -21,8 +22,8 @@ export default function ManageStudentLayout({
     return (
         <div className="flex min-h-screen bg-gray-100 dark:bg-neutral-900">
             <Sidebar />
+            <Navbar />
             <div className="flex-1">
-                <Navbar />
                 <main className="min-h-screen pt-16">
                     {children}
                 </main>
