@@ -455,6 +455,20 @@ const ViewResults = () => {
         }
     };
 
+    // Add this grade conversion function after the fetchStudentDetails function
+    const calculateGrade = (marks: number, totalMarks: number): string => {
+        const percentage = (marks / totalMarks) * 100;
+        
+        if (percentage >= 90) return 'A+';
+        if (percentage >= 80) return 'A';
+        if (percentage >= 70) return 'B+';
+        if (percentage >= 60) return 'B';
+        if (percentage >= 50) return 'C+';
+        if (percentage >= 40) return 'C';
+        if (percentage >= 33) return 'D';
+        return 'F';
+    };
+
     return (
         <div className="flex flex-col w-full p-6 bg-base-100 min-h-screen">
             <div className="card bg-base-200 shadow-xl">
@@ -683,7 +697,7 @@ const ViewResults = () => {
                                                     'N/A'
                                                 )}
                                             </td>
-                                            <td>{result.present && result.grade ? result.grade : 'N/A'}</td>
+                                            <td>{result.present ? (result.grade || calculateGrade(result.studentMarks || 0, result.totalMarks)) : 'N/A'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -731,7 +745,7 @@ const ViewResults = () => {
                                                         'N/A'
                                                     )}
                                                 </td>
-                                                <td>{studentResult.present && studentResult.grade ? studentResult.grade : 'N/A'}</td>
+                                                <td>{studentResult.present ? (studentResult.grade || calculateGrade(studentResult.marks || 0, resultSet.totalMarks)) : 'N/A'}</td>
                                             </tr>
                                         ))
                                     )}
