@@ -87,7 +87,7 @@ export async function PUT(request: Request) {
     // Extract ID from query params (URL)
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-
+    
     if (!id) {
       return NextResponse.json({ error: "Missing staff ID" }, { status: 400 });
     }
@@ -102,6 +102,52 @@ export async function PUT(request: Request) {
       );
     }
 
+    // Check if this is a profile image update
+    if (body.imageData) {
+      const user = await User.findByIdAndUpdate(
+        id, 
+        { profileImage: body.imageData },
+        { new: true }
+      ).select("-password -__v");
+      
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+      
+      return NextResponse.json(user, { status: 200 });
+    }
+
+    // Check if this is a status message update
+    if (body.statusMessage) {
+      const user = await User.findByIdAndUpdate(
+        id, 
+        { statusMessage: body.statusMessage },
+        { new: true }
+      ).select("-password -__v");
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(user, { status: 200 });
+    }
+
+    // Check if this is a phone update
+    if (body.phone) {
+      const user = await User.findByIdAndUpdate(
+        id, 
+        { phone: body.phone },
+        { new: true }
+      ).select("-password -__v");
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(user, { status: 200 });
+    }
+
+    // Regular profile update
     const userData = {
       firstName: body.firstName,
       lastName: body.lastName,
@@ -130,6 +176,7 @@ export async function PUT(request: Request) {
     );
   }
 }
+
 export async function DELETE(req: NextRequest) {
   await dbConnect();
 

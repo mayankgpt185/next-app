@@ -10,7 +10,10 @@ export interface IUser extends Document {
   academicYearId: string[];
   dateJoined: Date;
   lastLogin: Date;
+  profileImage: string;
+  statusMessage: string;
   isActive: boolean;
+  phone: string;
 }
 
 const userSchema = new mongoose.Schema({
@@ -23,7 +26,10 @@ const userSchema = new mongoose.Schema({
   academicYearId: [{ type: mongoose.Schema.Types.ObjectId, ref: "sessions", required: false }],
   dateJoined: { type: Date, required: true },
   lastLogin: { type: Date, required: false },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  profileImage: { type: String, required: false },
+  statusMessage: { type: String, required: false },
+  phone: { type: String, required: false }
 }, {
   timestamps: true
 });
