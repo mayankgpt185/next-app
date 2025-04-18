@@ -25,6 +25,7 @@ interface UserProfile {
     location: string;
     profileImage?: string;
     statusMessage?: string;
+    aboutMe?: string;
 }
 
 // Add this interface for country data
@@ -45,6 +46,19 @@ interface Country {
   };
 }
 
+// Add this component at the top of your file, before the ProfilePage component
+const EditButton = ({ onClick }: { onClick: () => void }) => (
+  <button 
+    onClick={onClick}
+    className="btn btn-ghost btn-xs"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+      <path d="m15 5 4 4"></path>
+    </svg>
+  </button>
+);
+
 export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +73,13 @@ export default function ProfilePage() {
     const [showCountryDropdown, setShowCountryDropdown] = useState(false);
     const [countrySearch, setCountrySearch] = useState("");
     const [countries, setCountries] = useState<{code: string, flag: string, name: string}[]>([]);
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
+    const [address, setAddress] = useState("");
+    const addressInputRef = useRef<HTMLTextAreaElement>(null);
+    const [isEditingAbout, setIsEditingAbout] = useState(false);
+    const [aboutText, setAboutText] = useState("");
+    const aboutInputRef = useRef<HTMLTextAreaElement>(null);
+    const [originalAboutText, setOriginalAboutText] = useState("");
     
     useEffect(() => {
         const fetchProfile = async () => {
@@ -118,6 +139,23 @@ export default function ProfilePage() {
                         // Otherwise just set the number
                         setPhoneNumber(userData.phone);
                     }
+                }
+
+                if (userData.address) {
+                    setAddress(userData.address);
+                }
+
+                if (userData.aboutMe) {
+                    const aboutText = userData.aboutMe;
+                    setAboutText(aboutText);
+                    setOriginalAboutText(aboutText);
+                } else {
+                    // Set default value if no aboutMe data exists
+                    const defaultText = userData.role === 'STUDENT' 
+                        ? 'I\'m currently studying. My design journey started in 2012, sitting across my brother in our home office on the island of Krk, Croatia.' 
+                        : 'I manage creative teams and set up processes that allow our collaborators and clients to achieve growth, scalability, and progress. My design journey started in 2012, sitting across my brother in our home office on the island of Krk, Croatia.';
+                    setAboutText(defaultText);
+                    setOriginalAboutText(defaultText);
                 }
 
                 setProfile(userData);
@@ -204,13 +242,26 @@ export default function ProfilePage() {
                     }
                 }
             }
+
+            if (isEditingAddress) {
+                const addressInputArea = document.getElementById('address-input-area');
+                if (addressInputArea && !addressInputArea.contains(event.target as Node)) {
+                    if (address.length >= 5) {
+                        handleAddressUpdate();
+                    } else if (address.length > 0) {
+                        toast.error('Address must be at least 5 characters');
+                    } else {
+                        setIsEditingAddress(false);
+                    }
+                }
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isEditingPhone, showCountryDropdown, phoneNumber]);
+    }, [isEditingPhone, showCountryDropdown, phoneNumber, isEditingAddress, address]);
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -342,6 +393,70 @@ export default function ProfilePage() {
         return country ? country.flag : "🌍";
     };
 
+    const handleAddressUpdate = async () => {
+        // Validate address length
+        if (address.length < 5) {
+            toast.error('Address must be at least 5 characters');
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('No token found');
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            
+            const response = await fetch(`/api/manage-staff?id=${payload.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    address: address
+                }),
+            });
+
+            if (response.ok) {
+                setProfile(prev => prev ? { ...prev, address } : null);
+                toast.success('Address updated successfully');
+                setIsEditingAddress(false);
+            } else {
+                throw new Error('Failed to update address');
+            }
+        } catch (error) {
+            console.error('Error updating address:', error);
+            toast.error('Failed to update address');
+        }
+    };
+
+    const handleAboutUpdate = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('No token found');
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            
+            const response = await fetch(`/api/manage-staff?id=${payload.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    aboutMe: aboutText
+                }),
+            });
+
+            if (response.ok) {
+                setProfile(prev => prev ? { ...prev, aboutMe: aboutText } : null);
+                toast.success('About Me updated successfully');
+                setIsEditingAbout(false);
+            } else {
+                throw new Error('Failed to update About Me');
+            }
+        } catch (error) {
+            console.error('Error updating About Me:', error);
+            toast.error('Failed to update About Me');
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -428,18 +543,10 @@ export default function ProfilePage() {
                                             <p className="italic">
                                                 {profile.statusMessage || statusMessage}
                                             </p>
-                                            <button 
-                                                onClick={() => {
-                                                    setIsEditingStatus(true);
-                                                    setTimeout(() => statusInputRef.current?.focus(), 0);
-                                                }}
-                                                className="btn btn-ghost btn-xs"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil">
-                                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                                    <path d="m15 5 4 4"></path>
-                                                </svg>
-                                            </button>
+                                            <EditButton onClick={() => {
+                                                setIsEditingStatus(true);
+                                                setTimeout(() => statusInputRef.current?.focus(), 0);
+                                            }} />
                                         </div>
                                     )}
                                 </div>
@@ -455,14 +562,51 @@ export default function ProfilePage() {
             {/* About Section */}
             <Card className="p-6 mb-6">
                 <h2 className="text-xl font-semibold mb-4">About Me</h2>
-                <div className="space-y-4 text-base-content/80">
-                    <p>
-                        {profile.role === 'STUDENT' ? 'Im currently studying' : 'I manage creative teams and set up processes that allow our collaborators and clients to achieve growth, scalability, and progress.'}
-                    </p>
-                    <p>
-                        {profile.role === 'STUDENT' ? 'My design journey started in 2012, sitting across my brother in our home office on the island of Krk, Croatia.' : 'My design journey started in 2012, sitting across my brother in our home office on the island of Krk, Croatia.'}
-                    </p>
-                </div>
+                {isEditingAbout ? (
+                    <div id="about-input-area" className="space-y-4">
+                        <textarea
+                            ref={aboutInputRef}
+                            value={aboutText}
+                            onChange={(e) => setAboutText(e.target.value)}
+                            className="textarea textarea-bordered w-full"
+                            rows={5}
+                            placeholder="Write something about yourself..."
+                            maxLength={500}
+                        />
+                        <div className="flex justify-between items-center">
+                            <div className="text-xs text-gray-500">
+                                {aboutText.length}/500 characters
+                            </div>
+                            <div className="flex gap-2">
+                                <button 
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => {
+                                        setAboutText(originalAboutText); // Restore original text
+                                        setIsEditingAbout(false);
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    className="btn btn-primary btn-sm"
+                                    onClick={handleAboutUpdate}
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex items-start justify-between">
+                        <div className="text-base-content/80 flex-1">
+                            <p className="whitespace-pre-wrap">{aboutText}</p>
+                        </div>
+                        <EditButton onClick={() => {
+                            setIsEditingAbout(true);
+                            setTimeout(() => aboutInputRef.current?.focus(), 0);
+                        }} />
+                    </div>
+                )}
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -568,24 +712,57 @@ export default function ProfilePage() {
                                             </span>
                                         ) : "Not provided"}
                                     </span>
-                                    <button 
-                                        onClick={() => {
-                                            setIsEditingPhone(true);
-                                            setTimeout(() => phoneInputRef.current?.focus(), 0);
-                                        }}
-                                        className="btn btn-ghost btn-xs"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil">
-                                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                            <path d="m15 5 4 4"></path>
-                                        </svg>
-                                    </button>
+                                    <EditButton onClick={() => {
+                                        setIsEditingPhone(true);
+                                        setTimeout(() => phoneInputRef.current?.focus(), 0);
+                                    }} />
                                 </div>
                             )}
                         </div>
                         <div className="flex items-center gap-3">
                             <MapPin className="w-5 h-5 text-primary" />
-                            <span className="text-base-content">{profile.address}</span>
+                            {isEditingAddress ? (
+                                <div className="flex-1" id="address-input-area">
+                                    <div className="w-full">
+                                        <textarea
+                                            ref={addressInputRef}
+                                            value={address}
+                                            onChange={(e) => {
+                                                if (e.target.value.length <= 200) {
+                                                    setAddress(e.target.value);
+                                                }
+                                            }}
+                                            className="textarea textarea-bordered w-full"
+                                            autoFocus
+                                            maxLength={200}
+                                            rows={3}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey && address.length >= 5) {
+                                                    e.preventDefault();
+                                                    handleAddressUpdate();
+                                                } else if (e.key === 'Escape') {
+                                                    setIsEditingAddress(false);
+                                                }
+                                            }}
+                                            placeholder="Enter your address (5-200 characters)"
+                                        />
+                                        <div className="text-xs text-right mt-1 text-gray-500">
+                                            {address.length}/200 characters
+                                        </div>
+                                    </div>
+                                    {address.length > 0 && address.length < 5 && (
+                                        <p className="text-xs text-error mt-1">Address must be at least 5 characters</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between w-full">
+                                    <span className="text-base-content">{profile.address}</span>
+                                    <EditButton onClick={() => {
+                                        setIsEditingAddress(true);
+                                        setTimeout(() => addressInputRef.current?.focus(), 0);
+                                    }} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </Card>

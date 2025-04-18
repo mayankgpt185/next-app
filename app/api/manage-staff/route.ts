@@ -147,6 +147,36 @@ export async function PUT(request: Request) {
       return NextResponse.json(user, { status: 200 });
     }
 
+    // Check if this is an address update
+    if (body.address) {
+      const user = await User.findByIdAndUpdate(
+        id, 
+        { address: body.address },
+        { new: true }
+      ).select("-password -__v");
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(user, { status: 200 });
+    }
+
+    // Check if this is an about me update
+    if (body.aboutMe) {
+      const user = await User.findByIdAndUpdate(
+        id, 
+        { aboutMe: body.aboutMe },
+        { new: true }
+      ).select("-password -__v");
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(user, { status: 200 });
+    }
+
     // Regular profile update
     const userData = {
       firstName: body.firstName,

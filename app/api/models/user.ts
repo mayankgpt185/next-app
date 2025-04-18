@@ -14,6 +14,7 @@ export interface IUser extends Document {
   statusMessage: string;
   isActive: boolean;
   phone: string;
+  aboutMe: string;
 }
 
 const userSchema = new mongoose.Schema({
@@ -29,7 +30,8 @@ const userSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   profileImage: { type: String, required: false },
   statusMessage: { type: String, required: false },
-  phone: { type: String, required: false }
+  phone: { type: String, required: false },
+  aboutMe: { type: String, required: false }
 }, {
   timestamps: true
 });
