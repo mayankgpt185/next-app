@@ -710,7 +710,12 @@ export default function ProfilePage() {
                                                     </>
                                                 )}
                                             </span>
-                                        ) : "Not provided"}
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                <span className="text-yellow-500">⚠️</span>
+                                                <span>Not provided</span>
+                                            </span>
+                                        )}
                                     </span>
                                     <EditButton onClick={() => {
                                         setIsEditingPhone(true);

@@ -9,12 +9,15 @@ const publicRoutes = ['/login', '/signup', '/api/auth/login', '/api/classes', 'a
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Check if it's a public route
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
   
   const token = request.cookies.get('auth-token')?.value || 
                 request.headers.get('Authorization')?.replace('Bearer ', '');
+  
+  // No token found
   if (!token) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,9 +39,10 @@ export async function middleware(request: NextRequest) {
     // Check if user has access to the requested route
     if (!hasAccess(userData.role, pathname)) {
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        return NextResponse.json({ error: 'Forbidden', message: 'You do not have permission to access this resource' }, { status: 403 });
       }
-      return NextResponse.redirect(new URL('/login', request.url));
+      // Redirect to a more appropriate page (dashboard or access denied page)
+      return NextResponse.redirect(new URL('/', request.url));
     }
 
     const requestHeaders = new Headers(request.headers);
