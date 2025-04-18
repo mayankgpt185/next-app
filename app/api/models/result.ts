@@ -15,6 +15,7 @@ export interface IResult extends Document {
         percentage: number | null;
         present: boolean;
     }[];
+    examType: string;
     isActive: boolean;
     addedDate: Date;
     modifiedDate: Date;
@@ -36,6 +37,7 @@ const ResultSchema = new mongoose.Schema(
       percentage: { type: Number, required: false, default: null },
       present: { type: Boolean, required: true },
     }],
+    examType: { type: String, required: true },
     isActive: { type: Boolean, default: true },
     addedDate: { type: Date, default: Date.now },
     modifiedDate: { type: Date },

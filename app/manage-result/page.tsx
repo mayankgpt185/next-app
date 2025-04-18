@@ -35,6 +35,7 @@ interface Subject {
 interface Result {
     _id: string;
     examDate: string;
+    examType?: string;
     subjectId: string;
     totalMarks: number;
     passingMarks: number;
@@ -469,6 +470,51 @@ const ViewResults = () => {
         return 'F';
     };
 
+    // Group results by exam type for student view
+    const groupResultsByExamType = (results: Result[]) => {
+        const grouped: { [key: string]: Result[] } = {};
+        
+        results.forEach(result => {
+            const examType = result.examType || 'Other';
+            if (!grouped[examType]) {
+                grouped[examType] = [];
+            }
+            grouped[examType].push(result);
+        });
+        
+        return grouped;
+    };
+
+    // Group results by student for teacher view
+    const groupResultsByStudent = (results: any[]) => {
+        const grouped: { [key: string]: { studentName: string, results: any[] } } = {};
+        
+        results.flatMap(resultSet => 
+            resultSet.results.forEach((studentResult: any) => {
+                const studentId = studentResult.studentId._id;
+                const studentName = `${studentResult.studentId.firstName} ${studentResult.studentId.lastName}`;
+                
+                if (!grouped[studentId]) {
+                    grouped[studentId] = {
+                        studentName,
+                        results: []
+                    };
+                }
+                
+                grouped[studentId].results.push({
+                    ...studentResult,
+                    examDate: resultSet.examDate,
+                    subjectId: resultSet.subjectId,
+                    totalMarks: resultSet.totalMarks,
+                    passingMarks: resultSet.passingMarks,
+                    examType: resultSet.examType
+                });
+            })
+        );
+        
+        return grouped;
+    };
+
     return (
         <div className="flex flex-col w-full p-6 bg-base-100 min-h-screen">
             <div className="card bg-base-200 shadow-xl">
@@ -655,102 +701,124 @@ const ViewResults = () => {
                             <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
                         </div>
                     ) : userType === 'student' && results.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="table w-full">
-                                <thead>
-                                    <tr className="text-base-content">
-                                        <th className="text-base-content">Exam Date</th>
-                                        <th className="text-base-content">Subject</th>
-                                        <th className="text-base-content">Teacher</th>
-                                        <th className="text-base-content">Total Marks</th>
-                                        <th className="text-base-content">Passing Marks</th>
-                                        <th className="text-base-content">Status</th>
-                                        <th className="text-base-content">Marks Obtained</th>
-                                        <th className="text-base-content">Result</th>
-                                        <th className="text-base-content">Grade</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {results.map((result, index) => (
-                                        <tr key={index} className="text-base-content">
-                                            <td>{new Date(result.examDate).toLocaleDateString()}</td>
-                                            <td>{getSubjectName(result.subjectId)}</td>
-                                            <td>{getTeacherName(result.staffId)}</td>
-                                            <td>{result.totalMarks}</td>
-                                            <td>{result.passingMarks}</td>
-                                            <td>
-                                                {result.present ? (
-                                                    <span className="badge badge-success text-white">Present</span>
-                                                ) : (
-                                                    <span className="badge badge-error text-white">Absent</span>
-                                                )}
-                                            </td>
-                                            <td>{result.present ? result.studentMarks : 'N/A'}</td>
-                                            <td>
-                                                {result.present ? (
-                                                    result.studentMarks !== null && result.studentMarks >= result.passingMarks ? (
-                                                        <span className="badge badge-success text-white">Pass</span>
-                                                    ) : (
-                                                        <span className="badge badge-error text-white">Fail</span>
-                                                    )
-                                                ) : (
-                                                    'N/A'
-                                                )}
-                                            </td>
-                                            <td>{result.present ? (result.grade || calculateGrade(result.studentMarks || 0, result.totalMarks)) : 'N/A'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="space-y-4">
+                            {Object.entries(groupResultsByExamType(results)).map(([examType, examResults], index) => (
+                                <div key={index} className="collapse collapse-arrow bg-base-200 border-2 border-base-300 rounded-lg mb-2">
+                                    <input type="checkbox" /> 
+                                    <div className="collapse-title text-xl font-medium text-base-content">
+                                        {examType} ({examResults.length} results)
+                                    </div>
+                                    <div className="collapse-content bg-base-100">
+                                        <div className="overflow-x-auto">
+                                            <table className="table table-zebra w-full">
+                                                <thead>
+                                                    <tr className="bg-base-300">
+                                                        <th className="text-base-content">Exam Date</th>
+                                                        <th className="text-base-content">Subject</th>
+                                                        <th className="text-base-content">Teacher</th>
+                                                        <th className="text-base-content">Total Marks</th>
+                                                        <th className="text-base-content">Passing Marks</th>
+                                                        <th className="text-base-content">Status</th>
+                                                        <th className="text-base-content">Marks Obtained</th>
+                                                        <th className="text-base-content">Result</th>
+                                                        <th className="text-base-content">Grade</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {examResults.map((result, resultIndex) => (
+                                                        <tr key={resultIndex} className="text-base-content">
+                                                            <td>{new Date(result.examDate).toLocaleDateString()}</td>
+                                                            <td>{getSubjectName(result.subjectId)}</td>
+                                                            <td>{getTeacherName(result.staffId)}</td>
+                                                            <td>{result.totalMarks}</td>
+                                                            <td>{result.passingMarks}</td>
+                                                            <td>
+                                                                {result.present ? (
+                                                                    <span className="badge badge-success text-base-100">Present</span>
+                                                                ) : (
+                                                                    <span className="badge badge-error text-base-100">Absent</span>
+                                                                )}
+                                                            </td>
+                                                            <td>{result.present ? result.studentMarks : 'N/A'}</td>
+                                                            <td>
+                                                                {result.present ? (
+                                                                    result.studentMarks !== null && result.studentMarks >= result.passingMarks ? (
+                                                                        <span className="badge badge-success text-base-100">Pass</span>
+                                                                    ) : (
+                                                                        <span className="badge badge-error text-base-100">Fail</span>
+                                                                    )
+                                                                ) : (
+                                                                    'N/A'
+                                                                )}
+                                                            </td>
+                                                            <td>{result.present ? (result.grade || calculateGrade(result.studentMarks || 0, result.totalMarks)) : 'N/A'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : userType === 'teacher' && allStudentResults.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="table w-full">
-                                <thead>
-                                    <tr className="text-base-content">
-                                        <th className="text-base-content">Student Name</th>
-                                        <th className="text-base-content">Exam Date</th>
-                                        <th className="text-base-content">Subject</th>
-                                        <th className="text-base-content">Total Marks</th>
-                                        <th className="text-base-content">Status</th>
-                                        <th className="text-base-content">Marks Obtained</th>
-                                        <th className="text-base-content">Result</th>
-                                        <th className="text-base-content">Grade</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {allStudentResults.flatMap((resultSet) => 
-                                        resultSet.results.map((studentResult: any, index: number) => (
-                                            <tr key={`${resultSet._id}-${studentResult._id}`} className="text-base-content">
-                                                <td>{studentResult.studentId.firstName + " " + studentResult.studentId.lastName}</td>
-                                                <td>{new Date(resultSet.examDate).toLocaleDateString()}</td>
-                                                <td>{getSubjectName(resultSet.subjectId)}</td>
-                                                <td>{resultSet.totalMarks}</td>
-                                                <td>
-                                                    {studentResult.present ? (
-                                                        <span className="badge badge-success text-white">Present</span>
-                                                    ) : (
-                                                        <span className="badge badge-error text-white">Absent</span>
-                                                    )}
-                                                </td>
-                                                <td>{studentResult.present ? studentResult.marks : 'N/A'}</td>
-                                                <td>
-                                                    {studentResult.present ? (
-                                                        studentResult.marks >= resultSet.passingMarks ? (
-                                                            <span className="badge badge-success text-white">Pass</span>
-                                                        ) : (
-                                                            <span className="badge badge-error text-white">Fail</span>
-                                                        )
-                                                    ) : (
-                                                        'N/A'
-                                                    )}
-                                                </td>
-                                                <td>{studentResult.present ? (studentResult.grade || calculateGrade(studentResult.marks || 0, resultSet.totalMarks)) : 'N/A'}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                        <div className="space-y-4">
+                            {Object.entries(groupResultsByStudent(allStudentResults)).map(([studentId, data], index) => (
+                                <div key={studentId} className="collapse collapse-arrow bg-base-200 border-2 border-base-300 rounded-lg mb-2">
+                                    <input type="checkbox" />
+                                    <div className="collapse-title text-xl font-medium text-base-content">
+                                        {data.studentName} ({data.results.length} results)
+                                    </div>
+                                    <div className="collapse-content bg-base-100">
+                                        <div className="overflow-x-auto">
+                                            <table className="table table-zebra w-full">
+                                                <thead>
+                                                    <tr className="bg-base-300">
+                                                        <th className="text-base-content">Exam Type</th>
+                                                        <th className="text-base-content">Exam Date</th>
+                                                        <th className="text-base-content">Subject</th>
+                                                        <th className="text-base-content">Total Marks</th>
+                                                        <th className="text-base-content">Status</th>
+                                                        <th className="text-base-content">Marks Obtained</th>
+                                                        <th className="text-base-content">Result</th>
+                                                        <th className="text-base-content">Grade</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {data.results.map((result: any, resultIndex: number) => (
+                                                        <tr key={resultIndex} className="text-base-content">
+                                                            <td>{result.examType || 'N/A'}</td>
+                                                            <td>{new Date(result.examDate).toLocaleDateString()}</td>
+                                                            <td>{getSubjectName(result.subjectId)}</td>
+                                                            <td>{result.totalMarks}</td>
+                                                            <td>
+                                                                {result.present ? (
+                                                                    <span className="badge badge-success text-base-100">Present</span>
+                                                                ) : (
+                                                                    <span className="badge badge-error text-base-100">Absent</span>
+                                                                )}
+                                                            </td>
+                                                            <td>{result.present ? result.marks : 'N/A'}</td>
+                                                            <td>
+                                                                {result.present ? (
+                                                                    result.marks >= result.passingMarks ? (
+                                                                        <span className="badge badge-success text-base-100">Pass</span>
+                                                                    ) : (
+                                                                        <span className="badge badge-error text-base-100">Fail</span>
+                                                                    )
+                                                                ) : (
+                                                                    'N/A'
+                                                                )}
+                                                            </td>
+                                                            <td>{result.present ? (result.grade || calculateGrade(result.marks || 0, result.totalMarks)) : 'N/A'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : selectedStudentId && hasFetchedResults || 
                        (userType === 'teacher' && selectedSubjectId && hasFetchedResults) ? (

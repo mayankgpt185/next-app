@@ -16,6 +16,9 @@ interface AcademicYear {
 
 export default function AddResultPage() {
     const [examDate, setExamDate] = useState('');
+    const [examType, setExamType] = useState('');
+    const [isOtherExamType, setIsOtherExamType] = useState(false);
+    const [otherExamType, setOtherExamType] = useState('');
     const [classId, setClassId] = useState('');
     const [sectionId, setSectionId] = useState('');
     const [subjectId, setSubjectId] = useState('');
@@ -38,6 +41,7 @@ export default function AddResultPage() {
     // Define Zod schema for form validation with conditional validation
     const resultFormSchema = z.object({
         examDate: z.string().nonempty("Exam date is required"),
+        examType: z.string().nonempty("Exam type is required"),
         classId: z.string().nonempty("Class is required"),
         sectionId: z.string().nonempty("Section is required"),
         subjectId: z.string().nonempty("Subject is required"),
@@ -282,6 +286,15 @@ export default function AddResultPage() {
         return options.filter(option => option.value <= totalMarks);
     };
 
+    useEffect(() => {
+        if (examType === 'other') {
+            setIsOtherExamType(true);
+            setValue("examType", otherExamType || "");
+        } else {
+            setIsOtherExamType(false);
+        }
+    }, [examType, otherExamType, setValue]);
+
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         // Custom validation for student records
         const newErrors: { [key: string]: string } = {};
@@ -338,6 +351,7 @@ export default function AddResultPage() {
                 },
                 body: JSON.stringify({
                     examDate: data.examDate,
+                    examType: isOtherExamType ? otherExamType : data.examType,
                     classId: data.classId,
                     sectionId: data.sectionId,
                     subjectId: data.subjectId,
@@ -364,6 +378,9 @@ export default function AddResultPage() {
             
             // Reset form after successful submission
             setExamDate('');
+            setExamType('');
+            setIsOtherExamType(false);
+            setOtherExamType('');
             setClassId('');
             setSectionId('');
             setSubjectId('');
@@ -378,6 +395,7 @@ export default function AddResultPage() {
             // Reset form fields using react-hook-form reset
             reset({
                 examDate: '',
+                examType: '',
                 classId: '',
                 sectionId: '',
                 subjectId: '',
@@ -457,6 +475,62 @@ export default function AddResultPage() {
                                 {formErrors.examDate && (
                                     <label className="label">
                                         <span className="label-text-alt text-error">{formErrors.examDate.message}</span>
+                                    </label>
+                                )}
+                            </div>
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text text-base-content">Exam Type</span>
+                                </label>
+                                {isOtherExamType ? (
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            className={`input input-bordered w-full bg-base-100 text-base-content ${formErrors.examType ? 'input-error' : ''}`}
+                                            placeholder="Specify exam type"
+                                            value={otherExamType}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                setOtherExamType(value);
+                                                setValue("examType", value);
+                                                clearFieldError("examType", value);
+                                            }}
+                                        />
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            className="px-2"
+                                            onClick={() => {
+                                                setExamType('');
+                                                setIsOtherExamType(false);
+                                                setOtherExamType('');
+                                                setValue("examType", "");
+                                            }}
+                                        >
+                                            ↩
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <select
+                                        className={`select select-bordered w-full bg-base-100 text-base-content ${formErrors.examType ? 'select-error' : ''}`}
+                                        {...register("examType")}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setExamType(value);
+                                            setValue("examType", value);
+                                            clearFieldError("examType", value);
+                                        }}
+                                    >
+                                        <option value="">Select Exam Type</option>
+                                        <option value="unit-test">Unit Test</option>
+                                        <option value="half-yearly">Half-Yearly Exam</option>
+                                        <option value="final">Final Exam</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                )}
+                                {formErrors.examType && (
+                                    <label className="label">
+                                        <span className="label-text-alt text-error">{formErrors.examType.message}</span>
                                     </label>
                                 )}
                             </div>
