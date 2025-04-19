@@ -4,7 +4,7 @@ import { verifyToken } from './lib/auth';
 import { hasAccess } from './lib/role';
 
 // Define public routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/api/auth/login', '/api/classes', 'api/sections', '/api/session', '/api/classes', '/api/sections', '/api/session', '/images'];
+const publicRoutes = ['/access-denied', '/login', '/signup', '/api/auth/login', '/api/classes', 'api/sections', '/api/session', '/api/classes', '/api/sections', '/api/session', '/images'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -41,8 +41,8 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden', message: 'You do not have permission to access this resource' }, { status: 403 });
       }
-      // Redirect to a more appropriate page (dashboard or access denied page)
-      return NextResponse.redirect(new URL('/', request.url));
+      // Redirect to access denied page
+      return NextResponse.redirect(new URL('/access-denied', request.url));
     }
 
     const requestHeaders = new Headers(request.headers);

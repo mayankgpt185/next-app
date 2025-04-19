@@ -20,12 +20,34 @@ export const roleAccess: UserRoleAccess[] = [
   },
   {
     role: UserRole.STUDENT,
-    routes: ['/manage-student', '/manage-student/add', '/api/manage-staff', '/api/student-class', '/manage-course', '/manage-course/add', '/api/manage-course', '/manage-subject', '/manage-subject/add', '/api/manage-subject', '/attendance', '/api/attendance', '/manage-result', '/api/manage-result', '/profile'],
+    routes: ['/manage-student', '/api/manage-staff', '/api/student-class', '/manage-course', '/api/manage-course', '/manage-subject', '/api/manage-subject', '/attendance', '/api/attendance', '/manage-result', '/api/manage-result', '/profile'],
   },
 ];
 
 export const hasAccess = (userRole: UserRole, path: string): boolean => {
   const access = roleAccess.find((access) => access.role === userRole);
   if (!access) return false;
-  return access.routes.some((route) => path.startsWith(route));
+  
+  // First check for exact match
+  if (access.routes.includes(path)) {
+    return true;
+  }
+  
+  // For paths with subpaths like /manage-course/add
+  const pathParts = path.split('/');
+  
+  // If this is an "add" or other special subpath, it must be explicitly allowed
+  if (pathParts.length > 2 && pathParts[2] !== '') {
+    const exactPath = path;
+    return access.routes.includes(exactPath);
+  }
+  
+  // For API routes, we need to be more careful
+  if (path.startsWith('/api/')) {
+    return access.routes.includes(path);
+  }
+  
+  // For regular routes, check if the base path is allowed
+  const basePath = `/${pathParts[1]}`;
+  return access.routes.includes(basePath);
 };
