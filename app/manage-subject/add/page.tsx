@@ -162,6 +162,20 @@ export default function AddSubjectPage() {
                         };
                     });
                     setAcademicYears(formattedYears);
+                    
+                    // Set default academic year based on current date
+                    if (!id) {  // Only for new subjects, not when editing
+                        const currentDate = new Date();
+                        const currentAcademicYear = formattedYears.find((year: { startDate: string; endDate: string }) => {
+                            const startDate = new Date(year.startDate);
+                            const endDate = new Date(year.endDate);
+                            return currentDate >= startDate && currentDate <= endDate;
+                        });
+                        
+                        if (currentAcademicYear) {
+                            setValue("academicYearId", currentAcademicYear.id);
+                        }
+                    }
                 } else {
                     // Dummy data for academic years
                     setAcademicYears([]);
