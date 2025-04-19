@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Edit } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 interface Class {
     _id: string;
@@ -44,6 +44,7 @@ interface Result {
     grade: string | null;
     present: boolean;
     staffId: string;
+    parentId: string;
 }
 
 interface AcademicYear {
@@ -74,6 +75,11 @@ const ViewResults = () => {
     const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingResult, setEditingResult] = useState<Result | null>(null);
+    const [updatedAttendance, setUpdatedAttendance] = useState(false);
+    const [updatedMarks, setUpdatedMarks] = useState<number | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
     // Fetch classes on component mount
     useEffect(() => {
         const fetchClasses = async () => {
@@ -470,7 +476,7 @@ const ViewResults = () => {
         return 'F';
     };
 
-    // Group results by exam type for student view
+    // Update the groupResultsByExamType function to sort results
     const groupResultsByExamType = (results: Result[]) => {
         const grouped: { [key: string]: Result[] } = {};
         
@@ -482,10 +488,15 @@ const ViewResults = () => {
             grouped[examType].push(result);
         });
         
+        // Sort each group's results by exam date (newest first)
+        Object.keys(grouped).forEach(key => {
+            grouped[key].sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
+        });
+        
         return grouped;
     };
 
-    // Group results by student for teacher view
+    // Update the groupResultsByStudent function to sort results
     const groupResultsByStudent = (results: any[]) => {
         const grouped: { [key: string]: { studentName: string, results: any[] } } = {};
         
@@ -507,12 +518,98 @@ const ViewResults = () => {
                     subjectId: resultSet.subjectId,
                     totalMarks: resultSet.totalMarks,
                     passingMarks: resultSet.passingMarks,
-                    examType: resultSet.examType
+                    examType: resultSet.examType,
+                    staffId: resultSet.staffId,
+                    parentId: resultSet._id  // Include the parent document ID
                 });
             })
         );
         
+        // Sort each student's results by exam date (newest first)
+        Object.keys(grouped).forEach(key => {
+            grouped[key].results.sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
+        });
+        
         return grouped;
+    };
+
+    // Add this helper function near the top of your file
+    const formatDate = (dateString: string): string => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        }); // Formats as dd/mm/yyyy
+    };
+
+    const handleUpdateResult = async () => {
+        if (!editingResult) {
+            toast.error('No result selected');
+            return;
+        }
+        
+        // Only validate marks if student is present
+        if (updatedAttendance && updatedMarks === null) {
+            toast.error('Please enter marks for present student');
+            return;
+        }
+        
+        // Set marks to null if student is absent
+        const marksToSubmit = updatedAttendance ? updatedMarks : null;
+        
+        setIsUpdating(true);
+        try {
+            console.log(editingResult);
+            const response = await fetch(`/api/manage-result?updateOne=true`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    parentId: editingResult.parentId,  // Parent document ID
+                    resultId: editingResult._id,           // Specific result ID
+                    present: updatedAttendance,
+                    marks: marksToSubmit
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update result');
+            }
+
+            // Close modal first to prevent UI flicker
+            setIsEditModalOpen(false);
+            
+            // Refresh data to see the changes
+            if (userType === 'student') {
+                // For student view
+                await fetchResults();
+            } else {
+                // For teacher view
+                // Clear previous results and re-fetch to get updated data
+                setAllStudentResults([]);
+                await fetchResults();
+            }
+            
+            toast.success('Result updated successfully');
+        } catch (error) {
+            console.error('Error updating result:', error);
+            toast.error('Failed to update result');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    // Add this function to handle editing
+    const handleEditClick = (result: any) => {
+        setEditingResult(result);
+        // Correctly set initial marks based on the result structure
+        // For student view results, marks is in 'studentMarks'
+        // For teacher view, it's in 'marks'
+        setUpdatedMarks(result.studentMarks !== undefined ? result.studentMarks : result.marks);
+        setUpdatedAttendance(result.present);
+        setIsEditModalOpen(true);
     };
 
     return (
@@ -727,7 +824,7 @@ const ViewResults = () => {
                                                 <tbody>
                                                     {examResults.map((result, resultIndex) => (
                                                         <tr key={resultIndex} className="text-base-content">
-                                                            <td>{new Date(result.examDate).toLocaleDateString()}</td>
+                                                            <td>{formatDate(result.examDate)}</td>
                                                             <td>{getSubjectName(result.subjectId)}</td>
                                                             <td>{getTeacherName(result.staffId)}</td>
                                                             <td>{result.totalMarks}</td>
@@ -782,13 +879,14 @@ const ViewResults = () => {
                                                         <th className="text-base-content">Marks Obtained</th>
                                                         <th className="text-base-content">Result</th>
                                                         <th className="text-base-content">Grade</th>
+                                                        <th className="text-base-content">Actions</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {data.results.map((result: any, resultIndex: number) => (
                                                         <tr key={resultIndex} className="text-base-content">
                                                             <td>{result.examType || 'N/A'}</td>
-                                                            <td>{new Date(result.examDate).toLocaleDateString()}</td>
+                                                            <td>{formatDate(result.examDate)}</td>
                                                             <td>{getSubjectName(result.subjectId)}</td>
                                                             <td>{result.totalMarks}</td>
                                                             <td>
@@ -811,6 +909,14 @@ const ViewResults = () => {
                                                                 )}
                                                             </td>
                                                             <td>{result.present ? (result.grade || calculateGrade(result.marks || 0, result.totalMarks)) : 'N/A'}</td>
+                                                            <td>
+                                                                {result.staffId === userId && (
+                                                                    <Edit 
+                                                                        className="h-5 w-5 cursor-pointer text-primary" 
+                                                                        onClick={() => handleEditClick(result)}
+                                                                    />
+                                                                )}
+                                                            </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -828,6 +934,73 @@ const ViewResults = () => {
                     ) : null}
                 </div>
             </div>
+
+            {isEditModalOpen && editingResult && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-base-100 p-6 rounded-lg shadow-lg w-96">
+                        <h3 className="text-lg font-bold mb-4 text-base-content">Update Result</h3>
+                        
+                        <div className="mb-4">
+                            <p className="text-sm text-base-content mb-1">Exam: {editingResult.examType || 'N/A'}</p>
+                            <p className="text-sm text-base-content mb-1">Date: {formatDate(editingResult.examDate)}</p>
+                            <p className="text-sm text-base-content mb-3">Total Marks: {editingResult.totalMarks}</p>
+                            
+                            {/* Attendance toggle */}
+                            <label className="label cursor-pointer justify-start gap-2 mb-4">
+                                <span className="label-text text-base-content">Attendance Status:</span>
+                                <div className="flex items-center">
+                                    <span className={`mr-2 text-base-content ${!updatedAttendance ? 'font-bold' : ''}`}>Absent</span>
+                                    <input
+                                        type="checkbox"
+                                        className="toggle toggle-success"
+                                        checked={updatedAttendance}
+                                        onChange={(e) => setUpdatedAttendance(e.target.checked)}
+                                    />
+                                    <span className={`ml-2 text-base-content ${updatedAttendance ? 'font-bold' : ''}`}>Present</span>
+                                </div>
+                            </label>
+                            
+                            {/* Only render marks input when attendance is present */}
+                            {updatedAttendance && (
+                                <div className="mt-2">
+                                    <label className="label pt-0">
+                                        <span className="label-text text-base-content">Marks</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="input input-bordered w-full bg-base-200 text-base-content"
+                                        min="0"
+                                        max={editingResult.totalMarks}
+                                        value={updatedMarks === null ? '' : updatedMarks}
+                                        onChange={(e) => setUpdatedMarks(e.target.value === '' ? null : Number(e.target.value))}
+                                        onWheel={(e) => e.currentTarget.blur()}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="error"
+                                outline
+                                onClick={() => setIsEditModalOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="primary"
+                                outline
+                                onClick={handleUpdateResult}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

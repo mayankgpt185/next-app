@@ -86,6 +86,7 @@ export async function GET(request: Request) {
           grade: studentResult?.grade || null,
           present: studentResult?.present || false,
           staffId: result.staffId,
+          examType: result.examType,
         };
       });
 
@@ -98,11 +99,11 @@ export async function GET(request: Request) {
         isActive: true,
         subjectId: subjectId,
       })
-      .populate({
-        path: 'results.studentId',
-        model: 'users'
-      })
-      .select("-__v");
+        .populate({
+          path: "results.studentId",
+          model: "users",
+        })
+        .select("-__v");
 
       return NextResponse.json(results);
     }
@@ -125,53 +126,49 @@ export async function PUT(request: Request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    const status = searchParams.get("status");
+    const updateOne = searchParams.get("updateOne");
+    // Parse the request body
+    const body = await request.json();
+    if (updateOne) {
+      const { parentId, resultId, present, marks } = body;
 
-    if (!id) {
-      return NextResponse.json(
-        { error: "Result ID is required" },
-        { status: 400 }
+      if (!parentId || !resultId) {
+        return NextResponse.json(
+          { error: "Parent ID and Result ID are required" },
+          { status: 400 }
+        );
+      }
+      // First find the document to get totalMarks
+      const document = await Result.findById(parentId);
+      if (!document) {
+        return NextResponse.json(
+          { error: "Result document not found" },
+          { status: 404 }
+        );
+      }
+
+      // Now update with the pre-calculated percentage
+      const updatedDocument = await Result.findOneAndUpdate(
+        {
+          _id: parentId,
+          "results._id": resultId,
+        },
+        {
+          $set: {
+            "results.$.present": present,
+            "results.$.marks": marks,
+          },
+        },
+        { new: true } // Return the updated document
       );
+      return NextResponse.json(updatedDocument);
     }
-
-    const resultExists = await Result.findById(id);
-
-    if (!resultExists) {
-      return NextResponse.json({ error: "Invalid result" }, { status: 400 });
-    }
-
-    let updateData: any = {};
-    if (status && id) {
-      updateData.status = status;
-    } else {
-      const data = await request.json();
-
-      updateData = {
-        approverId: data.approverId,
-        examDate: data.examDate,
-        examType: data.examType,
-        marks: data.marks,
-        totalMarks: data.totalMarks,
-        grade: data.grade,
-        percentage: data.percentage,
-        resultStatus: data.resultStatus,
-        attendanceStatus: data.attendanceStatus,
-        modifiedDate: new Date(),
-      };
-    }
-
-    const result = await Result.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
-
-    if (!result) {
-      return NextResponse.json({ error: "Result not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(result);
+    return NextResponse.json(
+      { error: "Invalid parameter provided" },
+      { status: 400 }
+    );
   } catch (error) {
-    console.error("Error in PUT /api/result:", error);
+    console.error("Error in PUT /api/manage-result:", error);
     return NextResponse.json(
       { error: "Failed to update result" },
       { status: 500 }
