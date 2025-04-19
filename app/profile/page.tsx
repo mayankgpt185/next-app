@@ -30,33 +30,33 @@ interface UserProfile {
 
 // Add this interface for country data
 interface Country {
-  name: {
-    common: string;
-    official: string;
-  };
-  cca2: string;
-  flag: string;
-  flags: {
-    png: string;
-    svg: string;
-  };
-  idd: {
-    root: string;
-    suffixes: string[];
-  };
+    name: {
+        common: string;
+        official: string;
+    };
+    cca2: string;
+    flag: string;
+    flags: {
+        png: string;
+        svg: string;
+    };
+    idd: {
+        root: string;
+        suffixes: string[];
+    };
 }
 
 // Add this component at the top of your file, before the ProfilePage component
 const EditButton = ({ onClick }: { onClick: () => void }) => (
-  <button 
-    onClick={onClick}
-    className="btn btn-ghost btn-xs"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil">
-      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-      <path d="m15 5 4 4"></path>
-    </svg>
-  </button>
+    <button
+        onClick={onClick}
+        className="btn btn-ghost btn-xs"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+            <path d="m15 5 4 4"></path>
+        </svg>
+    </button>
 );
 
 export default function ProfilePage() {
@@ -72,7 +72,7 @@ export default function ProfilePage() {
     const phoneInputRef = useRef<HTMLInputElement>(null);
     const [showCountryDropdown, setShowCountryDropdown] = useState(false);
     const [countrySearch, setCountrySearch] = useState("");
-    const [countries, setCountries] = useState<{code: string, flag: string, name: string}[]>([]);
+    const [countries, setCountries] = useState<{ code: string, flag: string, name: string }[]>([]);
     const [isEditingAddress, setIsEditingAddress] = useState(false);
     const [address, setAddress] = useState("");
     const addressInputRef = useRef<HTMLTextAreaElement>(null);
@@ -80,7 +80,7 @@ export default function ProfilePage() {
     const [aboutText, setAboutText] = useState("");
     const aboutInputRef = useRef<HTMLTextAreaElement>(null);
     const [originalAboutText, setOriginalAboutText] = useState("");
-    
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -151,8 +151,8 @@ export default function ProfilePage() {
                     setOriginalAboutText(aboutText);
                 } else {
                     // Set default value if no aboutMe data exists
-                    const defaultText = userData.role === 'STUDENT' 
-                        ? 'I\'m currently studying. My design journey started in 2012, sitting across my brother in our home office on the island of Krk, Croatia.' 
+                    const defaultText = userData.role === 'STUDENT'
+                        ? 'I\'m currently studying. My design journey started in 2012, sitting across my brother in our home office on the island of Krk, Croatia.'
                         : 'I manage creative teams and set up processes that allow our collaborators and clients to achieve growth, scalability, and progress. My design journey started in 2012, sitting across my brother in our home office on the island of Krk, Croatia.';
                     setAboutText(defaultText);
                     setOriginalAboutText(defaultText);
@@ -178,9 +178,9 @@ export default function ProfilePage() {
                 if (!response.ok) {
                     throw new Error('Failed to fetch countries');
                 }
-                
+
                 const data: Country[] = await response.json();
-                
+
                 // Format the data for our dropdown
                 const formattedCountries = data
                     .filter(country => country.idd.root) // Only countries with phone codes
@@ -188,7 +188,7 @@ export default function ProfilePage() {
                         // Some countries have multiple suffixes, we'll use the first one
                         const suffix = country.idd.suffixes && country.idd.suffixes.length > 0 ? country.idd.suffixes[0] : '';
                         const code = `${country.idd.root}${suffix}`;
-                        
+
                         return {
                             code,
                             flag: country.flag, // This is the emoji flag
@@ -197,9 +197,9 @@ export default function ProfilePage() {
                         };
                     })
                     .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
-                
+
                 setCountries(formattedCountries);
-                
+
             } catch (error) {
                 console.error('Error fetching countries:', error);
                 // Fallback to a few common countries if the API fails
@@ -210,7 +210,7 @@ export default function ProfilePage() {
                 ]);
             }
         };
-        
+
         fetchCountries();
     }, []);
 
@@ -220,15 +220,15 @@ export default function ProfilePage() {
             // Check if we're clicking outside the dropdown
             const dropdownElement = document.getElementById('country-dropdown');
             const dropdownButton = document.getElementById('country-dropdown-button');
-            
-            if (showCountryDropdown && 
-                dropdownElement && 
+
+            if (showCountryDropdown &&
+                dropdownElement &&
                 !dropdownElement.contains(event.target as Node) &&
-                dropdownButton && 
+                dropdownButton &&
                 !dropdownButton.contains(event.target as Node)) {
                 setShowCountryDropdown(false);
             }
-            
+
             // Check if we're clicking outside the phone input area when editing
             if (isEditingPhone) {
                 const phoneInputArea = document.getElementById('phone-input-area');
@@ -276,17 +276,17 @@ export default function ProfilePage() {
             };
             const compressedFile = await imageCompression(file, options);
 
-            
+
             // Convert to base64
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const base64String = reader.result as string;
-                            
+
                 // Get user ID from token
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('No token found');
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                
+
                 // Update profile image
                 const response = await fetch(`/api/manage-staff?id=${payload.id}`, {
                     method: 'PUT',
@@ -317,7 +317,7 @@ export default function ProfilePage() {
             const token = localStorage.getItem('token');
             if (!token) throw new Error('No token found');
             const payload = JSON.parse(atob(token.split('.')[1]));
-            
+
             const response = await fetch(`/api/manage-staff?id=${payload.id}`, {
                 method: 'PUT',
                 headers: {
@@ -344,7 +344,7 @@ export default function ProfilePage() {
     const validatePhoneInput = (input: string) => {
         // Only allow digits
         const digitsOnly = input.replace(/\D/g, '');
-        
+
         // Limit to 10 digits
         return digitsOnly.slice(0, 10);
     };
@@ -355,15 +355,15 @@ export default function ProfilePage() {
             toast.error('Please enter a valid 10-digit phone number');
             return;
         }
-        
+
         try {
             const token = localStorage.getItem('token');
             if (!token) throw new Error('No token found');
             const payload = JSON.parse(atob(token.split('.')[1]));
-            
+
             // Format phone with country code
             const formattedPhone = `${countryCode} ${phoneNumber}`;
-            
+
             const response = await fetch(`/api/manage-staff?id=${payload.id}`, {
                 method: 'PUT',
                 headers: {
@@ -399,12 +399,12 @@ export default function ProfilePage() {
             toast.error('Address must be at least 5 characters');
             return;
         }
-        
+
         try {
             const token = localStorage.getItem('token');
             if (!token) throw new Error('No token found');
             const payload = JSON.parse(atob(token.split('.')[1]));
-            
+
             const response = await fetch(`/api/manage-staff?id=${payload.id}`, {
                 method: 'PUT',
                 headers: {
@@ -433,7 +433,7 @@ export default function ProfilePage() {
             const token = localStorage.getItem('token');
             if (!token) throw new Error('No token found');
             const payload = JSON.parse(atob(token.split('.')[1]));
-            
+
             const response = await fetch(`/api/manage-staff?id=${payload.id}`, {
                 method: 'PUT',
                 headers: {
@@ -480,34 +480,34 @@ export default function ProfilePage() {
                 <div className="relative">
                     {/* Cover Image */}
                     <div className="h-48 bg-gradient-to-r from-primary to-secondary"></div>
-                    
+
                     {/* Profile Image and Basic Info */}
                     <div className="px-6 pb-6">
                         <div className="flex flex-col md:flex-row items-start md:items-end gap-4 -mt-16">
                             <div className="relative group">
                                 <div className="mb-4 w-32 h-32 rounded-full border-4 border-base-100 overflow-hidden bg-base-300">
-                                    <img 
-                                        src={profile?.profileImage || "/images/mayank.jpg"} 
-                                        alt="Profile" 
+                                    <img
+                                        src={profile?.profileImage || "/images/mayank.jpg"}
+                                        alt="Profile"
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => fileInputRef.current?.click()}
                                     className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                     style={{ top: '4px', left: '4px', width: 'calc(100% - 8px)', height: 'calc(100% - 8px - 16px)' }}
                                 >
                                     <Upload className="w-6 h-6 text-white" />
                                 </button>
-                                <input 
+                                <input
                                     ref={fileInputRef}
-                                    type="file" 
+                                    type="file"
                                     accept="image/*"
                                     className="hidden"
                                     onChange={handleImageUpload}
                                 />
                             </div>
-                            
+
                             <div className="flex-1 space-y-2">
                                 <h1 className="text-2xl font-bold text-base-content mt-2">
                                     {profile.firstName} {profile.lastName}
@@ -551,9 +551,6 @@ export default function ProfilePage() {
                                     )}
                                 </div>
                             </div>
-                            <Button outline className="hidden md:block">
-                                Edit Profile
-                            </Button>
                         </div>
                     </div>
                 </div>
@@ -578,21 +575,19 @@ export default function ProfilePage() {
                                 {aboutText.length}/500 characters
                             </div>
                             <div className="flex gap-2">
-                                <button 
-                                    className="btn btn-ghost btn-sm"
+                                <Button outline variant="error" className="btn btn-error btn-sm"
                                     onClick={() => {
                                         setAboutText(originalAboutText); // Restore original text
                                         setIsEditingAbout(false);
                                     }}
                                 >
                                     Cancel
-                                </button>
-                                <button 
-                                    className="btn btn-primary btn-sm"
+                                </Button>
+                                <Button variant="primary" outline className="btn btn-primary btn-sm"
                                     onClick={handleAboutUpdate}
                                 >
                                     Save
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -624,7 +619,7 @@ export default function ProfilePage() {
                                 <div className="flex-1">
                                     <div id="phone-input-area" className="flex items-center w-full">
                                         <div className="relative">
-                                            <button 
+                                            <button
                                                 id="country-dropdown-button"
                                                 type="button"
                                                 className="flex items-center gap-1 border rounded-l-md px-2 py-1 bg-base-200"
@@ -634,7 +629,7 @@ export default function ProfilePage() {
                                                 <span>{countryCode}</span>
                                                 <ChevronDown size={14} />
                                             </button>
-                                            
+
                                             {showCountryDropdown && (
                                                 <div id="country-dropdown" className="absolute top-full left-0 mt-1 w-64 bg-base-100 shadow-lg rounded-md z-10 max-h-60 overflow-y-auto">
                                                     <div className="p-2 sticky top-0 bg-base-100 border-b">
@@ -648,7 +643,7 @@ export default function ProfilePage() {
                                                         />
                                                     </div>
                                                     {countries
-                                                        .filter(country => 
+                                                        .filter(country =>
                                                             country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
                                                             country.code.includes(countrySearch)
                                                         )
@@ -670,7 +665,7 @@ export default function ProfilePage() {
                                                 </div>
                                             )}
                                         </div>
-                                        
+
                                         <input
                                             ref={phoneInputRef}
                                             type="text"
