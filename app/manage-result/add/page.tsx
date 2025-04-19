@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/app/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 // Add this interface at the top with your other interfaces
 interface AcademicYear {
@@ -15,6 +16,7 @@ interface AcademicYear {
 }
 
 export default function AddResultPage() {
+    const router = useRouter();
     const [examDate, setExamDate] = useState('');
     const [examType, setExamType] = useState('');
     const [isOtherExamType, setIsOtherExamType] = useState(false);
@@ -807,6 +809,7 @@ export default function AddResultPage() {
                                 type="button"
                                 variant="error"
                                 outline
+                                onClick={() => router.push('/manage-result')}
                             >
                                 Cancel
                             </Button>
