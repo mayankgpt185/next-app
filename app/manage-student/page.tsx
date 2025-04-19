@@ -29,6 +29,9 @@ export default function ManageStudentPage() {
     const studentRole = "STUDENT";
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
+    const [userClass, setUserClass] = useState<string>('');
+    const [userSection, setUserSection] = useState<string>('');
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -37,7 +40,9 @@ export default function ManageStudentPage() {
             const payload = token.split('.')[1];
             const decodedPayload = JSON.parse(atob(payload));
             const userRole = decodedPayload.role;
+            const userId = decodedPayload.id;
             setUserRole(userRole);
+            setUserId(userId);
         }
 
         const fetchStudent = async () => {
@@ -47,7 +52,7 @@ export default function ManageStudentPage() {
                 if (!response.ok || !studentClassResponse.ok) throw new Error('Failed to fetch student');
                 const data = await response.json();
                 const studentClassData = await studentClassResponse.json();
-                
+
                 data.forEach((student: StudentMember) => {
                     const matchingClass = studentClassData.find((cls: any) => cls.studentId === student._id);
                     if (matchingClass) {
@@ -55,6 +60,16 @@ export default function ManageStudentPage() {
                         student.section = matchingClass.section.section || '';
                     }
                 });
+
+                // If logged in as student, get their class and section
+                if (userRole === 'STUDENT' && userId) {
+                    const currentStudent = data.find((student: StudentMember) => student._id === userId);
+                    if (currentStudent) {
+                        setUserClass(currentStudent.class);
+                        setUserSection(currentStudent.section);
+                    }
+                }
+
                 setStudent(data);
             } catch (error) {
                 console.error('Error fetching student:', error);
@@ -63,14 +78,25 @@ export default function ManageStudentPage() {
             }
         };
         fetchStudent();
-    }, []);
+    }, [userRole, userId]);
 
-
-    const filteredStudent = studentMembers.filter(student =>
-        Object.values(student).some(value =>
+    // Filter students by search term AND by class/section if user is a student
+    const filteredStudent = studentMembers.filter(student => {
+        // First apply search filter
+        const matchesSearch = Object.values(student).some(value =>
             value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
+        );
+
+        // If user is a student, also filter by class and section
+        if (userRole === 'STUDENT' && userClass && userSection) {
+            return matchesSearch &&
+                student.class === userClass &&
+                student.section === userSection;
+        }
+
+        // Otherwise just return search results
+        return matchesSearch;
+    });
 
     const handleDeleteClick = (studentId: number) => {
         setSelectedStudentId(studentId);
@@ -147,7 +173,9 @@ export default function ManageStudentPage() {
                                         <th className="text-base-content">Address</th>
                                         <th className="text-base-content">Last Login</th>
                                         <th className="text-base-content">Date Joined</th>
-                                        <th className="text-base-content">Actions</th>
+                                        {userRole !== 'STUDENT' && (
+                                            <th className="text-base-content">Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -161,22 +189,25 @@ export default function ManageStudentPage() {
                                                 <td className="text-base-content">{student.address}</td>
                                                 <td className="text-base-content">{student?.lastLogin || 'N/A'}</td>
                                                 <td className="text-base-content">{formatDate(student.dateJoined)}</td>
-                                                <td>
-                                                    <div className="flex gap-2">
-                                                        <Link href={`/manage-student/add?id=${student._id}`}>
-                                                            <Button className="btn btn-ghost btn-sm">
-                                                                <Edit className="w-4 h-4 text-info" />
+                                                {userRole !== 'STUDENT' && (
+                                                    <td>
+                                                        <div className="flex gap-2">
+                                                            <Link href={`/manage-student/add?id=${student._id}`}>
+                                                                <Button className="btn btn-ghost btn-sm">
+                                                                    <Edit className="w-4 h-4 text-info" />
+                                                                </Button>
+                                                            </Link>
+                                                            <Button className="btn btn-ghost btn-sm"
+                                                                onClick={() => {
+                                                                    setSelectedStudentId(student._id);
+                                                                    setIsDeleteModalOpen(true)
+                                                                }}>
+                                                                <Trash2 className="w-4 h-4 text-error" />
                                                             </Button>
-                                                        </Link>
-                                                        <Button className="btn btn-ghost btn-sm"
-                                                            onClick={() => {
-                                                                setSelectedStudentId(student._id);
-                                                                setIsDeleteModalOpen(true)
-                                                            }}>
-                                                            <Trash2 className="w-4 h-4 text-error" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
+                                                        </div>
+                                                    </td>
+                                                )}
+
                                             </tr>
                                         ))
                                     ) : (

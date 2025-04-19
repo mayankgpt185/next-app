@@ -45,6 +45,8 @@ export default function ManageSubjectPage() {
     const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [userClassId, setUserClassId] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -53,8 +55,26 @@ export default function ManageSubjectPage() {
             const payload = token.split('.')[1];
             const decodedPayload = JSON.parse(atob(payload));
             const userRole = decodedPayload.role;
+            const userId = decodedPayload.id;
             setUserRole(userRole);
+            setUserId(userId);
         }
+
+        const fetchStudentClassInfo = async () => {
+            if (userRole === 'STUDENT' && userId) {
+                try {
+                    const response = await fetch(`/api/student-class?studentId=${userId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.class && data.class._id) {
+                            setUserClassId(data.class._id);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching student class info:', error);
+                }
+            }
+        };
 
         const fetchData = async () => {
             try {
@@ -80,7 +100,10 @@ export default function ManageSubjectPage() {
         };
 
         fetchData();
-    }, []);
+        if (userRole === 'STUDENT' && userId) {
+            fetchStudentClassInfo();
+        }
+    }, [userRole, userId]);
 
     // Get class name by ID
     const getClassName = (classId: string) => {
@@ -89,24 +112,24 @@ export default function ManageSubjectPage() {
     };
 
     const filteredSubjects = subjects.filter(subject => {
-        // Search in subject name
-        if (subject.subject.toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        // Apply search filter
+        const matchesSearch = subject.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (subject.courseId && subject.courseId.class &&
+                subject.courseId.class.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (subject.classNumber &&
+                subject.classNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (subject.sectionIds && Array.isArray(subject.sectionIds) &&
+                subject.sectionIds.some(section =>
+                    section.section.toLowerCase().includes(searchTerm.toLowerCase())
+                ));
 
-        // Search in class number - using the class name from courseId
-        if (subject.courseId && subject.courseId.class && 
-            subject.courseId.class.toLowerCase().includes(searchTerm.toLowerCase())) return true;
-        
-        // Also search in the class number if available
-        if (subject.classNumber && 
-            subject.classNumber.toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        // If user is a student, also filter by class ID
+        if (userRole === 'STUDENT' && userClassId) {
+            console.log(subject.courseId);
+            return matchesSearch && subject.courseId && subject.courseId.class === userClassId;
+        }
 
-        // Search in section
-        if (subject.sectionIds && Array.isArray(subject.sectionIds) &&
-            subject.sectionIds.some(section =>
-                section.section.toLowerCase().includes(searchTerm.toLowerCase())
-            )) return true;
-
-        return false;
+        return matchesSearch;
     });
 
     const handleDeleteClick = (subjectId: string) => {
@@ -183,7 +206,9 @@ export default function ManageSubjectPage() {
                                         <th className="text-base-content">Academic Year</th>
                                         <th className="text-base-content">Created Date</th>
                                         <th className="text-base-content">Updated Date</th>
-                                        <th className="text-base-content">Actions</th>
+                                        {userRole !== 'STUDENT' && (
+                                            <th className="text-base-content">Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -209,24 +234,24 @@ export default function ManageSubjectPage() {
                                                 </td>
                                                 <td className="text-base-content">{formatDate(subject.createdAt)}</td>
                                                 <td className="text-base-content">{formatDate(subject?.updatedAt) || 'N/A'}</td>
-                                                <td>
-                                                    <div className="flex gap-2">
-                                                        {userRole !== 'STUDENT' && (
+                                                {userRole !== 'STUDENT' && (
+                                                    <td>
+                                                        <div className="flex gap-2">
                                                             <Link href={`/manage-subject/add?id=${subject._id}`}>
                                                                 <Button className="btn btn-ghost btn-sm">
                                                                     <Edit className="w-4 h-4 text-info" />
                                                                 </Button>
                                                             </Link>
-                                                        )}
-                                                        <Button className="btn btn-ghost btn-sm"
-                                                            onClick={() => {
-                                                                setSelectedSubjectId(subject._id);
-                                                                setIsDeleteModalOpen(true)
-                                                            }}>
-                                                            <Trash2 className="w-4 h-4 text-error" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
+                                                            <Button className="btn btn-ghost btn-sm"
+                                                                onClick={() => {
+                                                                    setSelectedSubjectId(subject._id);
+                                                                    setIsDeleteModalOpen(true)
+                                                                }}>
+                                                                <Trash2 className="w-4 h-4 text-error" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))
                                     ) : (

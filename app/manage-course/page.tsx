@@ -28,6 +28,8 @@ export default function ManageCoursePage() {
     const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [userClassId, setUserClassId] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -36,8 +38,26 @@ export default function ManageCoursePage() {
             const payload = token.split('.')[1];
             const decodedPayload = JSON.parse(atob(payload));
             const userRole = decodedPayload.role;
+            const userId = decodedPayload.id;
             setUserRole(userRole);
+            setUserId(userId);
         }
+
+        const fetchStudentClassInfo = async () => {
+            if (userRole === 'STUDENT' && userId) {
+                try {
+                    const response = await fetch(`/api/student-class?studentId=${userId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.class && data.class._id) {
+                            setUserClassId(data.class._id);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching student class info:', error);
+                }
+            }
+        };
 
         const fetchCourse = async () => {
             try {
@@ -52,18 +72,27 @@ export default function ManageCoursePage() {
                 setIsLoading(false);
             }
         };
+
         fetchCourse();
-    }, []);
+        if (userRole === 'STUDENT' && userId) {
+            fetchStudentClassInfo();
+        }
+    }, [userRole, userId]);
 
 
     const filteredCourse = courses.filter(course => {
-        // Search in course name
-        if (course.name.toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        // First apply search filter
+        const matchesSearch =
+            course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (course.class && course.class.classNumber.toString().toLowerCase().includes(searchTerm.toLowerCase()));
 
-        // Search in class number
-        if (course.class && course.class.classNumber.toString().toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        // If user is a student, also filter by class
+        if (userRole === 'STUDENT' && userClassId) {
+            return matchesSearch && course.class._id === userClassId;
+        }
 
-        return false;
+        // Otherwise just return search results
+        return matchesSearch;
     });
 
     const handleDeleteClick = (courseId: string) => {
@@ -136,7 +165,9 @@ export default function ManageCoursePage() {
                                     <tr>
                                         <th className="text-base-content">Course Name</th>
                                         <th className="text-base-content">Class</th>
-                                        <th className="text-base-content">Actions</th>
+                                        {userRole !== 'STUDENT' && (
+                                            <th className="text-base-content">Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -145,24 +176,26 @@ export default function ManageCoursePage() {
                                             <tr key={course._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{course.name}</td>
                                                 <td className="text-base-content">{course.class.classNumber}</td>
-                                                <td>
-                                                    <div className="flex gap-2">
-                                                        {userRole !== 'STUDENT' && (
-                                                            <Link href={`/manage-course/add?id=${course._id}`}>
-                                                                <Button className="btn btn-ghost btn-sm">
-                                                                    <Edit className="w-4 h-4 text-info" />
-                                                                </Button>
-                                                            </Link>
-                                                        )}
-                                                        <Button className="btn btn-ghost btn-sm"
-                                                            onClick={() => {
-                                                                setSelectedCourseId(course._id);
-                                                                setIsDeleteModalOpen(true)
-                                                            }}>
-                                                            <Trash2 className="w-4 h-4 text-error" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
+                                                {userRole !== 'STUDENT' && (
+                                                    <td>
+                                                        <div className="flex gap-2">
+                                                            {userRole !== 'STUDENT' && (
+                                                                <Link href={`/manage-course/add?id=${course._id}`}>
+                                                                    <Button className="btn btn-ghost btn-sm">
+                                                                        <Edit className="w-4 h-4 text-info" />
+                                                                    </Button>
+                                                                </Link>
+                                                            )}
+                                                            <Button className="btn btn-ghost btn-sm"
+                                                                onClick={() => {
+                                                                    setSelectedCourseId(course._id);
+                                                                    setIsDeleteModalOpen(true)
+                                                                }}>
+                                                                <Trash2 className="w-4 h-4 text-error" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))
                                     ) : (
