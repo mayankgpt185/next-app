@@ -448,7 +448,7 @@ export default function ViewAttendancePage() {
                                                     </p>
                                                 )}
                                             </div>
-                                            {userRole != UserRole.STUDENT && (
+                                            {userRole != UserRole.STUDENT && attendanceRecords.length > 0 && attendanceRecords[0].staffId === userId && (
                                                 isEditing ? (
                                                     <div className="flex gap-2">
                                                         <Button
