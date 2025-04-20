@@ -11,7 +11,7 @@ export default function AccessDenied() {
         <div className="text-center mb-4">
           <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
           <p className="text-gray-500">
-            You don't have permission to access this page
+            You don&apos;t have permission to access this page
           </p>
         </div>
         
@@ -39,7 +39,7 @@ export default function AccessDenied() {
             </svg>
           </div>
           <p className="text-gray-600">
-            Sorry, you don't have the necessary permissions to view this page. 
+            Sorry, you don&apos;t have the necessary permissions to view this page. 
             Please contact your administrator if you believe this is an error.
           </p>
         </div>
