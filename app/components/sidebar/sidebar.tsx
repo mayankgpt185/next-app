@@ -4,6 +4,7 @@ import { Card } from '../ui/card';
 import { useRouter } from 'next/navigation';
 import { useSidebarStore } from '../store/useSidebarStore';
 import { UserRole, roleAccess } from '@/lib/role';
+import toast from 'react-hot-toast';
 const lucideReact = require('lucide-react');
 
 const Sidebar = () => {
@@ -20,6 +21,7 @@ const Sidebar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     // Initialize theme state
@@ -34,6 +36,21 @@ const Sidebar = () => {
         setUserRole(decodedPayload.role as UserRole);
         setUserName(decodedPayload.name);
         setUserEmail(decodedPayload.email);
+        
+        // Fetch user profile to get profile image
+        fetch(`/api/manage-staff?id=${decodedPayload.id}`)
+          .then(response => {
+            if (response.ok) return response.json();
+            throw new Error('Failed to fetch profile');
+          })
+          .then(userData => {
+            if (userData.profileImage) {
+              setProfileImage(userData.profileImage);
+            }
+          })
+          .catch(error => {
+            toast.error('Failed to fetch profile image');
+          });
       }
     }
   }, []);
@@ -304,7 +321,7 @@ const Sidebar = () => {
               >
                 <div className="flex items-center space-x-3">
                   <img
-                    src='/images/mayank.jpg'
+                    src={profileImage || '/images/mayank.jpg'}
                     alt="User"
                     className="w-8 h-8 rounded-full"
                   />
@@ -379,7 +396,7 @@ const Sidebar = () => {
                   className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 cursor-pointer hover:opacity-80 hover:ring-secondary transition-all duration-200"
                   onClick={toggleProfileMenu}
                 >
-                  <img src='/images/mayank.jpg' alt="User" />
+                  <img src={profileImage || '/images/mayank.jpg'} alt="User" />
                 </div>
                 
                 {showProfileMenu && (
