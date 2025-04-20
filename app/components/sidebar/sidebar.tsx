@@ -330,6 +330,18 @@ const Sidebar = () => {
                     </li>
                     <li>
                       <button 
+                        onClick={() => {
+                          handleNavigation('/calendar');
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-base-content"
+                      >
+                        <lucideReact.Calendar className="w-4 h-4 mr-2" />
+                        Calendar
+                      </button>
+                    </li>
+                    <li>
+                      <button 
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-error"
                       >
@@ -362,16 +374,21 @@ const Sidebar = () => {
         ) : (
           <div className="p-4 border-t border-base-200">
             <div className="flex flex-col items-center space-y-2">
-              <div className="avatar tooltip tooltip-right relative" data-tip={userName || 'N/A'} ref={profileMenuRef}>
+              <div className="avatar tooltip tooltip-right relative" ref={profileMenuRef}>
                 <div 
-                  className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 cursor-pointer"
+                  className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 cursor-pointer hover:opacity-80 hover:ring-secondary transition-all duration-200"
                   onClick={toggleProfileMenu}
                 >
                   <img src='/images/mayank.jpg' alt="User" />
                 </div>
                 
                 {showProfileMenu && (
-                  <div className="fixed ml-2 bg-base-100 rounded-md shadow-lg z-[9999] w-32 overflow-hidden border border-base-300" style={{ left: '4rem', top: profileMenuRef.current?.getBoundingClientRect().top + 'px' }}>
+                  <div className="fixed ml-2 bg-base-100 rounded-md shadow-lg z-[9999] w-32 overflow-hidden border border-base-300" 
+                    style={{ 
+                      left: '4rem', 
+                      top: `${(profileMenuRef.current?.getBoundingClientRect().top || 0) - 100}px`,
+                      maxHeight: '200px',
+                    }}>
                     <ul className="py-1">
                       <li>
                         <button 
@@ -380,6 +397,18 @@ const Sidebar = () => {
                         >
                           <lucideReact.User className="w-4 h-4 mr-2" />
                           Profile
+                        </button>
+                      </li>
+                      <li>
+                        <button 
+                          onClick={() => {
+                            handleNavigation('/calendar');
+                            setShowProfileMenu(false);
+                          }}  
+                          className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-base-content"
+                        >
+                          <lucideReact.Calendar className="w-4 h-4 mr-2" />
+                          Calendar
                         </button>
                       </li>
                       <li>
