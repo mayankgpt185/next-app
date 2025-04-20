@@ -1,4 +1,4 @@
-'use client';
+// 'use client';
 
 import './globals.css'
 import type { Metadata } from 'next'
@@ -8,13 +8,36 @@ import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export default function RootLayout({
+export const metadata: Metadata = {
+  title: 'Padhai',
+  description: 'CMS',
+  icons: {
+    icon: './icon.png',
+  },
+};
+
+const RootLayout = ({
   children,
 }: {
   children: React.ReactNode
-}) {
+}) => {
   return (
     <html lang="en" data-theme="system" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="./icon.png" sizes="any" />
+        <link
+          rel="icon"
+          href="./icon.png"  
+          type="image/png"
+          sizes="any"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="./apple-icon.png"
+          type="image/png"
+          sizes="any"
+        />
+      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
@@ -44,3 +67,5 @@ export default function RootLayout({
     </html>
   )
 }
+
+export default RootLayout;
