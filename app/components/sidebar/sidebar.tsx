@@ -172,6 +172,19 @@ const Sidebar = () => {
             </div>
           )}
           <div ref={scrollRef} className="flex flex-col space-y-2 overflow-y-auto custom-scrollbar-sidebar h-full">
+          {canAccessRoute('/manage-admin') && (
+              <div className="tooltip tooltip-right" data-tip="Manage Admin">
+                <button
+                  className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-admin' ? 'btn-active' : ''}`}
+                  onClick={() => handleNavigation('/manage-admin')}
+                  title={!isExpanded ? "Manage Admin" : ""}
+                >
+                  <lucideReact.UserRoundCog className="w-5 h-5 text-primary" />
+                  {isExpanded && <span className="ml-2 text-base-content font-medium">Manage Admin</span>}
+                </button>
+              </div>
+            )}
+
             {canAccessRoute('/manage-staff') && (
               <div className="tooltip tooltip-right" data-tip="Manage Staff">
                 <button

@@ -218,10 +218,10 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          <p className="mt-6 text-center text-sm text-base-content/70">
+          {/* <p className="mt-6 text-center text-sm text-base-content/70">
             Don't have an account?
             <a href="/signup" className="text-primary ml-1 hover:underline">Sign up</a>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>

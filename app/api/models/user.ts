@@ -9,6 +9,10 @@ export interface IUser extends Document {
   role: string;
   academicYearId: string[];
   dateJoined: Date;
+  isClassTeacher: boolean;
+  classId: string;
+  sectionId: string;
+  tenantId: number;
   lastLogin: Date;
   profileImage: string;
   statusMessage: string;
@@ -26,6 +30,10 @@ const userSchema = new mongoose.Schema({
   role: { type: String, required: true },
   academicYearId: [{ type: mongoose.Schema.Types.ObjectId, ref: "sessions", required: false }],
   dateJoined: { type: Date, required: true },
+  isClassTeacher: { type: Boolean, default: false },
+  classId: { type: mongoose.Schema.Types.ObjectId, ref: "classes", required: false },
+  sectionId: { type: mongoose.Schema.Types.ObjectId, ref: "sections", required: false },
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: "tenants", required: false },
   lastLogin: { type: Date, required: false },
   isActive: { type: Boolean, default: true },
   profileImage: { type: String, required: false },
