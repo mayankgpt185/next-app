@@ -1,8 +1,31 @@
 import dbConnect from "@/lib/mongodb";
 import Leave from "../models/leave";
 import { NextRequest, NextResponse } from "next/server";
+import { UserJwtPayload } from "@/lib/auth";
+import jwt from "jsonwebtoken";
 
-export async function POST(request: Request) {
+const getTokenFromRequest = async (request: NextRequest) => {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("No auth header or not Bearer");
+    return null;
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    // Verify and decode the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as UserJwtPayload;
+    return decoded;
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+};
+
+export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const data = await request.json();
@@ -25,9 +48,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -36,13 +64,11 @@ export async function GET(request: Request) {
     if (id) {
       const leave = await Leave.findById(id)
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .select("-__v");
 
       if (!leave) {
-        return NextResponse.json(
-          { error: "Leave not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "Leave not found" }, { status: 404 });
       }
 
       return NextResponse.json(leave);
@@ -50,6 +76,7 @@ export async function GET(request: Request) {
       const leaves = await Leave.find({ approverId: approverId })
         .populate("staffId")
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .select("-__v");
 
       return NextResponse.json(leaves);
@@ -58,6 +85,7 @@ export async function GET(request: Request) {
         .populate("approverId")
         .populate("staffId")
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .select("-__v");
 
       return NextResponse.json(leaves);
@@ -71,9 +99,15 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const status = searchParams.get("status");
@@ -85,13 +119,12 @@ export async function PUT(request: Request) {
       );
     }
 
-    const leaveExists = await Leave.findById(id);
+    const leaveExists = await Leave.findById(id).where({
+      clientOrganizationId,
+    });
 
     if (!leaveExists) {
-      return NextResponse.json(
-        { error: "Invalid leave" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid leave" }, { status: 400 });
     }
 
     let updateData: any = {};
@@ -109,7 +142,9 @@ export async function PUT(request: Request) {
       };
     }
 
-    const leave = await Leave.findByIdAndUpdate(id, updateData, { new: true });
+    const leave = await Leave.findByIdAndUpdate(id, updateData, {
+      new: true,
+    }).where({ clientOrganizationId });
 
     if (!leave) {
       return NextResponse.json({ error: "Leave not found" }, { status: 404 });
@@ -127,11 +162,18 @@ export async function PUT(request: Request) {
 
 export async function DELETE(req: NextRequest) {
   await dbConnect();
+  const token = await getTokenFromRequest(req);
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const clientOrganizationId = token.clientOrganizationId;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (id) {
-    const leave = await Leave.findByIdAndUpdate(id, { isActive: false });
+    const leave = await Leave.findByIdAndUpdate(id, { isActive: false }).where({
+      clientOrganizationId,
+    });
     if (leave) {
       return NextResponse.json(leave, { status: 201 });
     } else {

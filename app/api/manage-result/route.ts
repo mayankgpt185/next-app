@@ -1,10 +1,38 @@
 import dbConnect from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import Result from "../models/result";
+import { UserJwtPayload } from "@/lib/auth";
+import jwt from "jsonwebtoken";
 
-export async function POST(request: Request) {
+const getTokenFromRequest = async (request: NextRequest) => {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("No auth header or not Bearer");
+    return null;
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    // Verify and decode the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as UserJwtPayload;
+    return decoded;
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+};
+
+export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
     const data = await request.json();
 
     // Check if a result with the same criteria already exists
@@ -13,7 +41,7 @@ export async function POST(request: Request) {
       classId: data.classId,
       sectionId: data.sectionId,
       subjectId: data.subjectId,
-    });
+    }).where({ clientOrganizationId });
 
     if (existingResult) {
       return NextResponse.json(
@@ -38,9 +66,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -52,6 +85,7 @@ export async function GET(request: Request) {
     if (id) {
       const result = await Result.findById(id)
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .select("-__v");
 
       if (!result) {
@@ -69,12 +103,14 @@ export async function GET(request: Request) {
         sectionId: sectionId,
         isActive: true,
         "results.studentId": studentId,
-      }).select("-__v");
+      })
+        .where({ clientOrganizationId })
+        .select("-__v");
 
       const formattedResults = results.map((result) => {
-        const studentResult = result.results.find(
-          (r: any) => r.studentId.toString() === studentId
-        );
+        const studentResult = result.results
+          .find((r: any) => r.studentId.toString() === studentId)
+          .where({ clientOrganizationId });
         return {
           _id: result._id,
           examDate: result.examDate,
@@ -99,6 +135,7 @@ export async function GET(request: Request) {
         isActive: true,
         subjectId: subjectId,
       })
+        .where({ clientOrganizationId })
         .populate({
           path: "results.studentId",
           model: "users",
@@ -122,9 +159,15 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
+
     const { searchParams } = new URL(request.url);
     const updateOne = searchParams.get("updateOne");
     // Parse the request body
@@ -139,7 +182,9 @@ export async function PUT(request: Request) {
         );
       }
       // First find the document to get totalMarks
-      const document = await Result.findById(parentId);
+      const document = await Result.findById(parentId).where({
+        clientOrganizationId,
+      });
       if (!document) {
         return NextResponse.json(
           { error: "Result document not found" },
@@ -160,7 +205,7 @@ export async function PUT(request: Request) {
           },
         },
         { new: true } // Return the updated document
-      );
+      ).where({ clientOrganizationId });
       return NextResponse.json(updatedDocument);
     }
     return NextResponse.json(
@@ -178,11 +223,18 @@ export async function PUT(request: Request) {
 
 export async function DELETE(req: NextRequest) {
   await dbConnect();
+  const token = await getTokenFromRequest(req);
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const clientOrganizationId = token.clientOrganizationId;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (id) {
-    const result = await Result.findByIdAndUpdate(id, { isActive: false });
+    const result = await Result.findByIdAndUpdate(id, {
+      isActive: false,
+    }).where({ clientOrganizationId });
     if (result) {
       return NextResponse.json(result, { status: 201 });
     } else {

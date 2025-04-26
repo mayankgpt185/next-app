@@ -4,7 +4,7 @@ import { verifyToken } from './lib/auth';
 import { hasAccess } from './lib/role';
 
 // Define public routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/api/auth/login', '/api/classes', '/api/sections', '/api/session', '/api/classes', '/api/sections', '/api/session', '/images', '/access-denied', '/api/auth/signup'];
+const publicRoutes = ['/login', '/signup', '/api/auth/login', '/images', '/access-denied', '/api/auth/signup'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

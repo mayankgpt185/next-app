@@ -3,25 +3,53 @@ import Course from "../models/course";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Class } from "../models/class";
+import { UserJwtPayload } from "@/lib/auth";
+import jwt from "jsonwebtoken";
 
-export async function POST(request: Request) {
+const getTokenFromRequest = async (request: NextRequest) => {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("No auth header or not Bearer");
+    return null;
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    // Verify and decode the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as UserJwtPayload;
+    return decoded;
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+};
+
+export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
     const data = await request.json();
 
     // Verify that class exist
-    const classExists = await Class.findById(data.classId);
+    const classExists = await Class.findById(data.classId).where({
+      clientOrganizationId,
+    });
 
     if (!classExists) {
-      return NextResponse.json(
-        { error: "Invalid class" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid class" }, { status: 400 });
     }
 
     const course = await Course.create({
       name: data.name,
       class: data.classId,
+      clientOrganizationId,
     });
 
     return NextResponse.json(course);
@@ -34,15 +62,21 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (id) {
       const course = await Course.findById(id)
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .populate("class")
         .select("-__v");
 
@@ -57,6 +91,7 @@ export async function GET(request: Request) {
     } else {
       const courses = await Course.find({})
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .populate("class")
         .select("-__v");
 
@@ -71,9 +106,15 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const data = await request.json();
@@ -86,13 +127,12 @@ export async function PUT(request: Request) {
     }
 
     // Find class by its ID
-    const classExists = await Class.findById(data.classId);
+    const classExists = await Class.findById(data.classId).where({
+      clientOrganizationId,
+    });
 
     if (!classExists) {
-      return NextResponse.json(
-        { error: "Invalid class" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid class" }, { status: 400 });
     }
 
     const course = await Course.findByIdAndUpdate(
@@ -104,6 +144,7 @@ export async function PUT(request: Request) {
       },
       { new: true }
     )
+      .where({ clientOrganizationId })
       .populate("class");
 
     if (!course) {
@@ -122,11 +163,18 @@ export async function PUT(request: Request) {
 
 export async function DELETE(req: NextRequest) {
   await dbConnect();
+  const token = await getTokenFromRequest(req);
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const clientOrganizationId = token.clientOrganizationId;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (id) {
-    const course = await Course.findByIdAndUpdate(id, { isActive: false });
+    const course = await Course.findByIdAndUpdate(id, {
+      isActive: false,
+    }).where({ clientOrganizationId });
     if (course) {
       return NextResponse.json(course, { status: 201 });
     } else {

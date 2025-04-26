@@ -48,7 +48,8 @@ export async function POST(request: Request) {
       id: existingUser._id.toString(),
       email: existingUser.email,
       role: existingUser.role as UserRole,
-      name: existingUser.firstName + " " + existingUser.lastName
+      name: existingUser.firstName + " " + existingUser.lastName,
+      clientOrganizationId: existingUser.clientOrganizationId
     });
 
     // Convert Mongoose document to a plain object

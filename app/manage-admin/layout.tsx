@@ -22,7 +22,7 @@ export default function ManageAdminLayout({
         <div className="flex min-h-screen bg-gray-100 dark:bg-neutral-900">
             <Sidebar />
             <div className="flex-1">
-                <main className="min-h-screen pt-16">
+                <main className="min-h-screen">
                     {children}
                 </main>
             </div>

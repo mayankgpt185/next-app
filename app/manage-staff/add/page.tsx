@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { Button } from '@/app/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { set } from 'lodash';
 
 
 const formSchema = (isUpdate: boolean) => z.object({
@@ -38,7 +37,8 @@ export default function AddStaffPage() {
   const id = searchParams.get('id');
   const staffRole = "STAFF";
   const isUpdate = !!id; // If `id` exists, it's an update, otherwise it's a new user
-
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [clientOrganizationId, setClientOrganizationId] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
     resolver: zodResolver(formSchema(isUpdate)),
@@ -46,10 +46,22 @@ export default function AddStaffPage() {
 
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const payload = token.split('.')[1];
+      const decodedPayload = JSON.parse(atob(payload));
+      const userRole = decodedPayload.role;
+      const clientOrganizationId = decodedPayload.clientOrganizationId;
+      setUserRole(userRole);
+      setClientOrganizationId(clientOrganizationId);
+    }
+
+
     if (id) {
       const fetchUserData = async () => {
         try {
-          const response = await fetch(`/api/manage-staff?id=${id}`);
+          const response = await fetch(`/api/manage-staff?id=${id}&clientOrganizationId=${clientOrganizationId}`);
           if (!response.ok) throw new Error('Failed to fetch user data');
           const data = await response.json();
 

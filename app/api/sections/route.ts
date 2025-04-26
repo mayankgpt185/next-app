@@ -1,12 +1,41 @@
 import dbConnect from "@/lib/mongodb";
 import Section from "@/app/api/models/section";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { UserJwtPayload } from "@/lib/auth";
+import jwt from "jsonwebtoken";
 
-export async function GET() {
+const getTokenFromRequest = async (request: NextRequest) => {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("No auth header or not Bearer");
+    return null;
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    // Verify and decode the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as UserJwtPayload;
+    return decoded;
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+};
+
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-
-    const sections = await Section.find().sort({ section: 1 });
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
+    const sections = await Section.find({
+      clientOrganizationId: { $in: [clientOrganizationId] },
+    }).sort({ section: 1 });
     return NextResponse.json(sections);
   } catch (error) {
     return NextResponse.json(
@@ -15,5 +44,3 @@ export async function GET() {
     );
   }
 }
-
-

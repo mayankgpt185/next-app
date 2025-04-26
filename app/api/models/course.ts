@@ -11,6 +11,11 @@ const CourseSchema = new mongoose.Schema(
       ref: "classes", // Match the model name used in Class model
       required: true,
     },
+    clientOrganizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "clientOrganizations",
+      required: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -10,6 +10,11 @@ const SessionSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    clientOrganizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "clientOrganizations",
+      required: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

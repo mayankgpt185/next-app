@@ -1,9 +1,38 @@
 import dbConnect from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import Session from "../models/session";
-export async function POST(request: Request) {
+import { UserJwtPayload } from "@/lib/auth";
+import jwt from "jsonwebtoken";
+
+const getTokenFromRequest = async (request: NextRequest) => {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("No auth header or not Bearer");
+    return null;
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    // Verify and decode the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as UserJwtPayload;
+    return decoded;
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+};
+
+export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
     const data = await request.json();
 
     const session = await Session.create({
@@ -23,15 +52,21 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (id) {
       const session = await Session.findById(id)
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .select("-__v");
 
       if (!session) {
@@ -45,6 +80,7 @@ export async function GET(request: Request) {
     } else {
       const sessions = await Session.find({})
         .where({ isActive: true })
+        .where({ clientOrganizationId })
         .select("-__v");
 
       return NextResponse.json(sessions);
@@ -58,9 +94,15 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
+    const token = await getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const clientOrganizationId = token.clientOrganizationId;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const data = await request.json();
@@ -80,7 +122,7 @@ export async function PUT(request: Request) {
         modifiedDate: new Date(),
       },
       { new: true }
-    );
+    ).where({ clientOrganizationId });
 
     return NextResponse.json(session);
   } catch (error) {
@@ -94,11 +136,20 @@ export async function PUT(request: Request) {
 
 export async function DELETE(req: NextRequest) {
   await dbConnect();
+  const token = await getTokenFromRequest(req);
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const clientOrganizationId = token.clientOrganizationId;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (id) {
-    const session = await Session.findByIdAndUpdate(id, { isActive: false });
+    const session = await Session.findByIdAndUpdate(id, {
+        isActive: false,
+      })
+        .where({ clientOrganizationId })
+        .select("-__v");
     if (session) {
       return NextResponse.json(session, { status: 201 });
     } else {
