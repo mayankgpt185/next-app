@@ -107,16 +107,27 @@ export async function GET(request: NextRequest) {
 
     if (id) {
       // If ID is provided, fetch a specific staff member
-      const staffMember = await User.findById(id)
-        .where({ clientOrganizationId })
+
+      let query = User.findById(id);
+      // Only add clientOrganizationId filter for non-super users
+      if (userRole !== UserRole.SUPER) {
+        query = query.where({ clientOrganizationId });
+      }
+
+      // Only add clientOrganizationId filter for non-super users
+      if (userRole !== UserRole.SUPER) {
+        query = query.where({ clientOrganizationId });
+      } else {
+        query = query.populate("clientOrganizationId");
+      }
+
+      const staffMember = await query
         .select("-password -__v")
-        // .populate({
-        //   path: "clientOrganizationId",
-        //   populate: [
-        //     { path: "clientId", select: "clientName" },
-        //     { path: "organizationId", select: "organizationName" },
-        //   ],
-        // });
+        .sort({ createdAt: -1 });
+
+      // const staffMember = await User.findById(id)
+      //   .where({ clientOrganizationId })
+      //   .select("-password -__v")
 
       if (!staffMember) {
         return NextResponse.json(
@@ -129,20 +140,12 @@ export async function GET(request: NextRequest) {
     } else if (role) {
       // If user has super role, don't filter by clientOrganizationId
       let query = User.find({ role: role, isActive: true });
-      
+
       // Only add clientOrganizationId filter for non-super users
       if (userRole !== UserRole.SUPER) {
         query = query.where({ clientOrganizationId });
-      } else {
-        // query = query.populate({
-        //   path: "clientOrganizationId",
-        //   populate: [
-        //     { path: "clientId", select: "clientName" },
-        //     { path: "organizationId", select: "organizationName" },
-        //   ],
-        // });
       }
-      
+
       const staffMembers = await query
         .select("-password -__v")
         .sort({ createdAt: -1 });
