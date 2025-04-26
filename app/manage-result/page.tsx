@@ -204,9 +204,7 @@ const ViewResults = () => {
 
     // Add a separate useEffect that responds to userRole changes
     useEffect(() => {
-        if (userRole) {
-            console.log("userRole", userRole);
-            
+        if (userRole) {            
             if (userRole === 'ADMIN' || userRole === 'STAFF') {
                 setUserType('teacher');
             } else if (userRole === 'STUDENT') {
@@ -560,7 +558,6 @@ const ViewResults = () => {
         
         setIsUpdating(true);
         try {
-            console.log(editingResult);
             const response = await fetch(`/api/manage-result?updateOne=true`, {
                 method: 'PUT',
                 headers: {

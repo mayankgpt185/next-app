@@ -125,7 +125,6 @@ export default function ManageSubjectPage() {
 
         // If user is a student, also filter by class ID
         if (userRole === 'STUDENT' && userClassId) {
-            console.log(subject.courseId);
             return matchesSearch && subject.courseId && subject.courseId.class === userClassId;
         }
 

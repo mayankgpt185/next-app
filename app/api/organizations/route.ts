@@ -80,8 +80,6 @@ export async function POST(request: Request) {
     // Set the new organizationId to be one higher than the current highest
     // If no organizations exist yet, start with 1
     const nextOrgId = highestOrg ? highestOrg.organizationId + 1 : 1;
-
-    console.log("nextOrgId", nextOrgId);
     
     // Create organization data with all required fields explicitly set
     const orgData = {
@@ -93,7 +91,6 @@ export async function POST(request: Request) {
       isActive: true,
       addedDate: new Date(),
     };
-    console.log("orgData", orgData);
 
     // Create new organization with explicit fields
     const newOrg = await Organizations.create(orgData);
