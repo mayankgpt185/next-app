@@ -12,7 +12,7 @@ const SessionSchema = new mongoose.Schema(
     },
     clientOrganizationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "clientOrganizations",
+      ref: "clientorganizations",
       required: true,
     },
     isActive: {

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+// Check if the model is already registered to avoid duplicate registration
 const clientOrganizationSchema = new mongoose.Schema(
   {
     clientId: {
@@ -24,8 +25,8 @@ const clientOrganizationSchema = new mongoose.Schema(
   }
 );
 
-export const ClientOrganization =
-  mongoose.models.clientOrganizations ||
-  mongoose.model("clientOrganizations", clientOrganizationSchema);
+const ClientOrganization = 
+  mongoose.models.clientorganizations || 
+  mongoose.model("clientorganizations", clientOrganizationSchema);
 
 export default ClientOrganization;

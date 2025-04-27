@@ -31,7 +31,7 @@ const LeaveSchema = new mongoose.Schema(
     status: { type: String, default: "Pending" },
     clientOrganizationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "clientOrganizations",
+      ref: "clientorganizations",
       required: true,
     },
     isActive: { type: Boolean, default: true },

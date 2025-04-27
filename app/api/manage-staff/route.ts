@@ -1,10 +1,14 @@
 import dbConnect from "@/lib/mongodb";
 import User from "@/app/api/models/user";
+import ClientOrganization from "@/app/api/models/clientOrganization";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { UserJwtPayload } from "@/lib/auth";
 import { UserRole } from "@/lib/role";
+import "@/app/api/models/clientOrganization";
+import "@/app/api/models/client";
+import "@/app/api/models/organization";
 
 // Helper function to get token from request
 const getTokenFromRequest = async (request: NextRequest) => {
@@ -109,25 +113,28 @@ export async function GET(request: NextRequest) {
       // If ID is provided, fetch a specific staff member
 
       let query = User.findById(id);
-      // Only add clientOrganizationId filter for non-super users
-      if (userRole !== UserRole.SUPER) {
-        query = query.where({ clientOrganizationId });
-      }
 
       // Only add clientOrganizationId filter for non-super users
       if (userRole !== UserRole.SUPER) {
         query = query.where({ clientOrganizationId });
       } else {
-        query = query.populate("clientOrganizationId");
+        query = query.populate({
+          path: "clientOrganizationId",
+          model: "clientorganizations",
+          populate: [
+            { path: "clientId", model: "clients", select: "clientName" },
+            {
+              path: "organizationId",
+              model: "organizations",
+              select: "organizationName",
+            },
+          ],
+        });
       }
 
       const staffMember = await query
         .select("-password -__v")
         .sort({ createdAt: -1 });
-
-      // const staffMember = await User.findById(id)
-      //   .where({ clientOrganizationId })
-      //   .select("-password -__v")
 
       if (!staffMember) {
         return NextResponse.json(
@@ -144,6 +151,19 @@ export async function GET(request: NextRequest) {
       // Only add clientOrganizationId filter for non-super users
       if (userRole !== UserRole.SUPER) {
         query = query.where({ clientOrganizationId });
+      } else {
+        query = query.populate({
+          path: "clientOrganizationId",
+          model: "clientorganizations",
+          populate: [
+            { path: "clientId", model: "clients", select: "clientName" },
+            {
+              path: "organizationId",
+              model: "organizations",
+              select: "organizationName",
+            },
+          ],
+        });
       }
 
       const staffMembers = await query

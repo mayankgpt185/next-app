@@ -13,7 +13,7 @@ export interface UserRoleAccess {
 export const roleAccess: UserRoleAccess[] = [
   {
     role: UserRole.SUPER,
-    routes: ['/manage-admin', '/manage-admin/add', '/api/manage-staff', '/api/clients', '/api/organizations', '/api/client-organization', '/profile', '/calendar', '/api/classes', '/api/sections', '/api/session'],
+    routes: ['/manage-admin', '/manage-admin/add', '/api/manage-staff', '/api/clients', '/api/organizations', '/api/client-organization', '/profile', '/calendar', '/api/classes', '/api/sections', '/api/session', '/api/auth/signup'],
   },
   {
     role: UserRole.ADMIN,

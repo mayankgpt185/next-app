@@ -5,7 +5,7 @@ const SectionSchema = new mongoose.Schema(
     section: { type: String, required: true, unique: true },
     clientOrganizationId: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "clientOrganizations",
+      ref: "clientorganizations",
       required: true,
     }],
     isActive: { type: Boolean, default: true },

@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema(
     },
     clientOrganizationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "clientOrganizations",
+      ref: "clientorganizations",
       required: false,
     },
     lastLogin: { type: Date, required: false },

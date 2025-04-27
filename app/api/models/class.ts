@@ -5,7 +5,7 @@ const ClassSchema = new mongoose.Schema(
     classNumber: { type: Number, required: true, unique: true },
     clientOrganizationId: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "clientOrganizations",
+      ref: "clientorganizations",
       required: true,
     }],
     isActive: { type: Boolean, default: true },

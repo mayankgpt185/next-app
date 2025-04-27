@@ -17,7 +17,7 @@ const SubjectSchema = new mongoose.Schema(
     subject: { type: String, required: true },
     clientOrganizationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "clientOrganizations",
+      ref: "clientorganizations",
       required: true,
     },
     courseId: {

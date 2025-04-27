@@ -63,7 +63,7 @@ const ResultSchema = new mongoose.Schema(
     examType: { type: String, required: true },
     clientOrganizationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "clientOrganizations",
+      ref: "clientorganizations",
       required: true,
     },
     isActive: { type: Boolean, default: true },
