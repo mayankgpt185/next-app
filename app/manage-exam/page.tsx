@@ -161,7 +161,7 @@ const ExamCard = ({
 };
 
 interface ManageExamPageProps {
-    exams?: Exam[];
+    exams: Exam[];
 }
 
 export default function ManageExamPage({ exams = [] }: ManageExamPageProps) {
