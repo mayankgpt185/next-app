@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const clientOrganizationId = token.clientOrganizationId;
     const data = await request.json();
 
     // Check if a result with the same criteria already exists
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
       classId: data.classId,
       sectionId: data.sectionId,
       subjectId: data.subjectId,
-    }).where({ clientOrganizationId });
+    });
 
     if (existingResult) {
       return NextResponse.json(
@@ -73,7 +72,6 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const clientOrganizationId = token.clientOrganizationId;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -85,7 +83,6 @@ export async function GET(request: NextRequest) {
     if (id) {
       const result = await Result.findById(id)
         .where({ isActive: true })
-        .where({ clientOrganizationId })
         .select("-__v");
 
       if (!result) {
@@ -103,14 +100,12 @@ export async function GET(request: NextRequest) {
         sectionId: sectionId,
         isActive: true,
         "results.studentId": studentId,
-      })
-        .where({ clientOrganizationId })
-        .select("-__v");
+      }).select("-__v");
 
       const formattedResults = results.map((result) => {
-        const studentResult = result.results
-          .find((r: any) => r.studentId.toString() === studentId)
-          .where({ clientOrganizationId });
+        const studentResult = result.results.find(
+          (r: any) => r.studentId.toString() === studentId
+        );
         return {
           _id: result._id,
           examDate: result.examDate,
@@ -135,7 +130,6 @@ export async function GET(request: NextRequest) {
         isActive: true,
         subjectId: subjectId,
       })
-        .where({ clientOrganizationId })
         .populate({
           path: "results.studentId",
           model: "users",
@@ -166,7 +160,6 @@ export async function PUT(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const clientOrganizationId = token.clientOrganizationId;
 
     const { searchParams } = new URL(request.url);
     const updateOne = searchParams.get("updateOne");
@@ -182,9 +175,7 @@ export async function PUT(request: NextRequest) {
         );
       }
       // First find the document to get totalMarks
-      const document = await Result.findById(parentId).where({
-        clientOrganizationId,
-      });
+      const document = await Result.findById(parentId);
       if (!document) {
         return NextResponse.json(
           { error: "Result document not found" },
@@ -205,7 +196,7 @@ export async function PUT(request: NextRequest) {
           },
         },
         { new: true } // Return the updated document
-      ).where({ clientOrganizationId });
+      );
       return NextResponse.json(updatedDocument);
     }
     return NextResponse.json(
@@ -227,14 +218,13 @@ export async function DELETE(req: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const clientOrganizationId = token.clientOrganizationId;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (id) {
     const result = await Result.findByIdAndUpdate(id, {
       isActive: false,
-    }).where({ clientOrganizationId });
+    });
     if (result) {
       return NextResponse.json(result, { status: 201 });
     } else {

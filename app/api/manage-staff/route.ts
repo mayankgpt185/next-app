@@ -9,6 +9,9 @@ import { UserRole } from "@/lib/role";
 import "@/app/api/models/clientOrganization";
 import "@/app/api/models/client";
 import "@/app/api/models/organization";
+import StudentClass from "../models/studentClass";
+import "@/app/api/models/class";
+import "@/app/api/models/section";
 
 // Helper function to get token from request
 const getTokenFromRequest = async (request: NextRequest) => {
@@ -141,6 +144,21 @@ export async function GET(request: NextRequest) {
           { error: "Staff member not found" },
           { status: 404 }
         );
+      }
+
+      if (userRole === "STUDENT") {
+        const studentClass = await StudentClass.findOne({ studentId: id })
+          .populate("class", "_id classNumber")
+          .populate("section", "_id section");
+        if (studentClass) {
+          const staffMemberObj = staffMember.toObject 
+            ? staffMember.toObject()
+            : staffMember;
+          return NextResponse.json(
+            { ...staffMemberObj, class: studentClass.class, section: studentClass.section },
+            { status: 200 }
+          );
+        }
       }
 
       return NextResponse.json(staffMember, { status: 200 });

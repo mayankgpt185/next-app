@@ -5,6 +5,7 @@ import { StudentMemberDTO } from '../api/dto/StudentMember';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/button';
 import { UserRole } from '@/lib/role';
+
 export default function ViewAttendancePage() {
     const [subjects, setSubjects] = useState<{ _id: string, subject: string, class: string, section: string, courseId: { class: string, section: string } }[]>([]);
     const [students, setStudents] = useState<{ _id: string, name: string, status: string }[]>([]);
@@ -24,33 +25,26 @@ export default function ViewAttendancePage() {
     const [hasChanges, setHasChanges] = useState(false);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
-    // Add this function to decode JWT token and get user ID
-    const getUserIdFromToken = () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return null;
-            const payload = token.split('.')[1];
-            const decodedPayload = JSON.parse(atob(payload));
-            const userRole = decodedPayload.role;
-            setUserRole(userRole);
-            setUserId(decodedPayload.id);
-            return decodedPayload.id;
-        } catch (error) {
-            console.error('Error extracting user ID from token:', error);
-            return null;
-        }
-    };
-
-    // Set user role from localStorage when component mounts
-    useEffect(() => {
-        const role = localStorage.getItem('userRole');
-        setUserRole(role);
-    }, []);
 
     // Fetch classes and sections and combine them
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const payload = token.split('.')[1];
+            const decodedPayload = JSON.parse(atob(payload));
+            const userRole = decodedPayload.role;
+            const userId = decodedPayload.id;
+            setUserRole(userRole);
+            setUserId(userId);
+        }
+
+
         const fetchClassesAndSections = async () => {
             try {
+                console.log(userId);
+                console.log(userRole);
+
                 setIsLoadingClassSections(true);
 
                 const [classesResponse, sectionsResponse] = await Promise.all([
@@ -81,10 +75,9 @@ export default function ViewAttendancePage() {
 
                 setClassSections(combinedOptions);
 
-                const userId = getUserIdFromToken();
-                
                 // Only fetch student details if the user is a student
                 if (userId && userRole === 'STUDENT') {
+                    console.log(userId);
                     await fetchStudentDetails(userId, combinedOptions);
                 }
             } catch (error) {
@@ -100,12 +93,14 @@ export default function ViewAttendancePage() {
             try {
                 // Get the student's class and section from student-class API
                 const studentClassResponse = await fetch(`/api/student-class?studentId=${studentId}`);
+                console.log(studentClassResponse);
 
                 if (!studentClassResponse.ok) {
                     throw new Error('Failed to fetch student class information');
                 }
 
                 const studentClassData = await studentClassResponse.json();
+                console.log(studentClassData);
 
                 if (studentClassData && studentClassData.class && studentClassData.section) {
                     // Find matching class-section in our options
@@ -127,7 +122,7 @@ export default function ViewAttendancePage() {
         };
 
         fetchClassesAndSections();
-    }, []);
+    }, [userRole, userId]);
 
     // Fetch subjects when class-section is selected
     useEffect(() => {
@@ -135,6 +130,7 @@ export default function ViewAttendancePage() {
             setSubjects([]);
             return;
         }
+
 
         const [classId, sectionId] = selectedClassSection.split('-');
 

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const clientOrganizationId = token.clientOrganizationId;
-      const data = await request.json();
+    const data = await request.json();
 
     // Verify that class and section exist
     const courseExists = await Course.findById(data.courseId).where({
@@ -106,14 +106,14 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const clientOrganizationId = token.clientOrganizationId;  
+    const clientOrganizationId = token.clientOrganizationId;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const academicYear = searchParams.get("academicYear");
     const classId = searchParams.get("classId");
     const sectionId = searchParams.get("sectionId");
-    
+
     if (classId && sectionId) {
       // First, find all courses with the specified class ID
       const courses = await Course.find({
@@ -169,6 +169,36 @@ export async function GET(request: NextRequest) {
         .select("-__v");
 
       return NextResponse.json(subjects);
+    } else if (classId) {
+      // Find all courses with the specified class ID
+      const courses = await Course.find({
+        class: classId,
+        isActive: true,
+      }).where({ clientOrganizationId });
+
+      if (courses.length === 0) {
+        return NextResponse.json(
+          { error: "No courses found for the specified class" },
+          { status: 404 }
+        );
+      }
+
+      // Get the course IDs
+      const courseIds = courses.map((course) => course._id);
+
+      // Find subjects that reference any of these courses
+      const subjects = await Subject.find({
+        courseId: { $in: courseIds },
+        isActive: true,
+      })
+        .where({ clientOrganizationId })
+        .populate("courseId")
+        .populate("staffIds")
+        .populate("academicYearId")
+        .populate("sectionIds")
+        .select("-__v");
+
+      return NextResponse.json(subjects);
     } else {
       const subjects = await Subject.find({})
         .where({ isActive: true })
@@ -214,7 +244,9 @@ export async function PUT(request: NextRequest) {
     const courseExists = await Course.findById(data.courseId).where({
       clientOrganizationId,
     });
-    const academicYearExists = await Session.findById(data.academicYearId).where({
+    const academicYearExists = await Session.findById(
+      data.academicYearId
+    ).where({
       clientOrganizationId,
     });
 
