@@ -40,8 +40,8 @@ const Sidebar = () => {
         setUserId(decodedPayload.id);
 
         // Fetch user profile to get profile image
-        if (userId) {
-          fetch(`/api/manage-staff?id=${userId}`)
+        if (decodedPayload.id) {
+          fetch(`/api/manage-staff?id=${decodedPayload.id}`)
             .then(response => {
               if (response.ok) return response.json();
               throw new Error('Failed to fetch profile');

@@ -113,28 +113,38 @@ export async function GET(request: NextRequest) {
     const userRole = token.role;
 
     if (role === UserRole.STUDENT && id) {
-      const userData = await User.findOne({
-        role: role,
-        _id: id,
-        isActive: true,
-        clientOrganizationId,
-      });
-      if (userData) {
-        const studentClassSection = await StudentClass.findOne({
-          studentId: userData._id,
-        });
-
-        const userList = await User.find({
+      if (userRole === UserRole.STUDENT) {
+        const userData = await User.findOne({
           role: role,
+          _id: id,
           isActive: true,
           clientOrganizationId,
         });
 
+        if (userData) {
+          const studentClassSection = await StudentClass.findOne({
+            studentId: userData._id,
+          });
+          const userList = await User.find({
+            role: role,
+            isActive: true,
+            clientOrganizationId,
+          });
+
+          const studentClass = await StudentClass.find()
+            .where("studentId")
+            .in(userList.map((user) => user._id))
+            .where({ class: studentClassSection.class })
+            .where({ section: studentClassSection.section })
+            .populate("studentId")
+            .populate("class", "_id classNumber")
+            .populate("section", "_id section")
+            .select("-password -__v");
+
+          return NextResponse.json(studentClass, { status: 200 });
+        }
+      } else {
         const studentClass = await StudentClass.find()
-          .where("studentId")
-          .in(userList.map((user) => user._id))
-          .where({ class: studentClassSection.class })
-          .where({ section: studentClassSection.section })
           .populate("studentId")
           .populate("class", "_id classNumber")
           .populate("section", "_id section")
