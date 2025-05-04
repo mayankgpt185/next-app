@@ -52,10 +52,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the result document with the proper structure
-    const result = await Result.create(data);
+    const result = {
+      ...data,
+      clientOrganizationId: token.clientOrganizationId,
+    };
 
-    return NextResponse.json(result);
+    // Create the result document with the proper structure
+    const resultResponse = await Result.create(result);
+
+    return NextResponse.json(resultResponse);
   } catch (error) {
     console.error("Error in POST /api/manage-result:", error);
     return NextResponse.json(
@@ -99,8 +104,11 @@ export async function GET(request: NextRequest) {
         classId: classId,
         sectionId: sectionId,
         isActive: true,
+        clientOrganizationId: token.clientOrganizationId,
         "results.studentId": studentId,
-      }).select("-__v");
+      })
+      .populate("examType")
+      .select("-__v");
 
       const formattedResults = results.map((result) => {
         const studentResult = result.results.find(
@@ -129,11 +137,13 @@ export async function GET(request: NextRequest) {
         sectionId: sectionId,
         isActive: true,
         subjectId: subjectId,
+        clientOrganizationId: token.clientOrganizationId
       })
         .populate({
           path: "results.studentId",
           model: "users",
         })
+        .populate("examType")
         .select("-__v");
 
       return NextResponse.json(results);

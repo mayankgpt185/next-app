@@ -35,7 +35,10 @@ interface Subject {
 interface Result {
     _id: string;
     examDate: string;
-    examType?: string;
+    examType?: {
+        _id: string;
+        type: string;
+    };
     subjectId: string;
     totalMarks: number;
     passingMarks: number;
@@ -186,7 +189,7 @@ const ViewResults = () => {
 
     // Update the useEffect for user role detection
     useEffect(() => {
-        try {            
+        try {
             // Get user info from token and set states
             const userInfo = getUserInfoFromToken();
             if (userInfo) {
@@ -204,12 +207,12 @@ const ViewResults = () => {
 
     // Add a separate useEffect that responds to userRole changes
     useEffect(() => {
-        if (userRole) {            
+        if (userRole) {
             if (userRole === 'ADMIN' || userRole === 'STAFF') {
                 setUserType('teacher');
             } else if (userRole === 'STUDENT') {
                 setUserType('student');
-                
+
                 if (userId) {
                     // For students, automatically fetch their class and section
                     fetchStudentDetails(userId);
@@ -217,7 +220,7 @@ const ViewResults = () => {
             }
         }
     }, [userRole, userId]);
-    
+
     // Modify the academic year useEffect
     useEffect(() => {
         const fetchAcademicYears = async () => {
@@ -234,14 +237,14 @@ const ViewResults = () => {
                 if (data.length > 0) {
                     // Get current date
                     const currentDate = new Date();
-                    
+
                     // Find academic year containing current date
                     const currentAcademicYear = data.find((year: any) => {
                         const startDate = new Date(year.startDate);
                         const endDate = new Date(year.endDate);
                         return currentDate >= startDate && currentDate <= endDate;
                     });
-                    
+
                     if (currentAcademicYear) {
                         // Set the academic year that contains the current date
                         setSelectedAcademicYearId(currentAcademicYear._id);
@@ -271,20 +274,20 @@ const ViewResults = () => {
             if (!selectedClassId || !selectedSectionId) {
                 return;
             }
-            
+
             setIsLoadingSubjects(true);
             const params = new URLSearchParams({
                 classId: selectedClassId,
                 sectionId: selectedSectionId
             });
-            
+
             const response = await fetch(`/api/manage-subject/?${params}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch subjects');
             }
             const data = await response.json();
             setSubjects(data);
-            
+
             // Reset selected subject when subjects change
             setSelectedSubjectId('');
         } catch (error) {
@@ -373,7 +376,7 @@ const ViewResults = () => {
 
         setIsLoading(true);
         setHasFetchedResults(true);
-        
+
         try {
             if (userType === 'student') {
                 // Fetch results for a specific student
@@ -389,6 +392,8 @@ const ViewResults = () => {
                 }
 
                 const data = await response.json();
+                console.log(data);
+
                 setResults(data);
             } else {
                 // Fetch results for all students for a specific subject
@@ -404,11 +409,12 @@ const ViewResults = () => {
                 }
 
                 const data = await response.json();
+                console.log(data);
                 setAllStudentResults(data);
                 // Clear single student results
                 setResults([]);
             }
-            
+
             // Ensure we have the latest subjects and teachers
             if (subjects.length === 0) {
                 await fetchSubjects();
@@ -423,13 +429,13 @@ const ViewResults = () => {
             setIsLoading(false);
         }
     };
-    
+
     // Add helper functions to get names from IDs
     const getSubjectName = (subjectId: string) => {
         const subject = subjects.find(s => s._id === subjectId);
         return subject ? subject.subject : subjectId;
     };
-    
+
     const getTeacherName = (teacherId: string) => {
         const teacher = teachers.find(t => t._id === teacherId);
         return teacher ? teacher.firstName + " " + teacher.lastName : teacherId;
@@ -440,11 +446,11 @@ const ViewResults = () => {
         try {
             // First get the student's class and section from student-class API
             const studentClassResponse = await fetch(`/api/student-class?studentId=${studentId}`);
-            
+
             if (!studentClassResponse.ok) {
                 throw new Error('Failed to fetch student class information');
             }
-            
+
             const studentClassData = await studentClassResponse.json();
             if (studentClassData) {
                 // Set class and section from the student's data
@@ -463,7 +469,7 @@ const ViewResults = () => {
     // Add this grade conversion function after the fetchStudentDetails function
     const calculateGrade = (marks: number, totalMarks: number): string => {
         const percentage = (marks / totalMarks) * 100;
-        
+
         if (percentage >= 90) return 'A+';
         if (percentage >= 80) return 'A';
         if (percentage >= 70) return 'B+';
@@ -477,39 +483,41 @@ const ViewResults = () => {
     // Update the groupResultsByExamType function to sort results
     const groupResultsByExamType = (results: Result[]) => {
         const grouped: { [key: string]: Result[] } = {};
-        
+
         results.forEach(result => {
-            const examType = result.examType || 'Other';
-            if (!grouped[examType]) {
-                grouped[examType] = [];
+            const examType = result.examType?.type;
+            if (examType) {
+                if (!grouped[examType]) {
+                    grouped[examType] = [];
+                }
+                grouped[examType].push(result);
             }
-            grouped[examType].push(result);
         });
-        
+
         // Sort each group's results by exam date (newest first)
         Object.keys(grouped).forEach(key => {
             grouped[key].sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
         });
-        
+
         return grouped;
     };
 
     // Update the groupResultsByStudent function to sort results
     const groupResultsByStudent = (results: any[]) => {
         const grouped: { [key: string]: { studentName: string, results: any[] } } = {};
-        
-        results.flatMap(resultSet => 
+
+        results.flatMap(resultSet =>
             resultSet.results.forEach((studentResult: any) => {
                 const studentId = studentResult.studentId._id;
                 const studentName = `${studentResult.studentId.firstName} ${studentResult.studentId.lastName}`;
-                
+
                 if (!grouped[studentId]) {
                     grouped[studentId] = {
                         studentName,
                         results: []
                     };
                 }
-                
+
                 grouped[studentId].results.push({
                     ...studentResult,
                     examDate: resultSet.examDate,
@@ -522,12 +530,12 @@ const ViewResults = () => {
                 });
             })
         );
-        
+
         // Sort each student's results by exam date (newest first)
         Object.keys(grouped).forEach(key => {
             grouped[key].results.sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
         });
-        
+
         return grouped;
     };
 
@@ -546,16 +554,16 @@ const ViewResults = () => {
             toast.error('No result selected');
             return;
         }
-        
+
         // Only validate marks if student is present
         if (updatedAttendance && updatedMarks === null) {
             toast.error('Please enter marks for present student');
             return;
         }
-        
+
         // Set marks to null if student is absent
         const marksToSubmit = updatedAttendance ? updatedMarks : null;
-        
+
         setIsUpdating(true);
         try {
             const response = await fetch(`/api/manage-result?updateOne=true`, {
@@ -577,7 +585,7 @@ const ViewResults = () => {
 
             // Close modal first to prevent UI flicker
             setIsEditModalOpen(false);
-            
+
             // Refresh data to see the changes
             if (userType === 'student') {
                 // For student view
@@ -588,7 +596,7 @@ const ViewResults = () => {
                 setAllStudentResults([]);
                 await fetchResults();
             }
-            
+
             toast.success('Result updated successfully');
         } catch (error) {
             console.error('Error updating result:', error);
@@ -600,6 +608,7 @@ const ViewResults = () => {
 
     // Add this function to handle editing
     const handleEditClick = (result: any) => {
+        console.log(result);
         setEditingResult(result);
         // Correctly set initial marks based on the result structure
         // For student view results, marks is in 'studentMarks'
@@ -781,9 +790,9 @@ const ViewResults = () => {
                             variant="primary"
                             outline
                             onClick={fetchResults}
-                            disabled={(userType === 'student' && !selectedStudentId) || 
-                                     (userType === 'teacher' && !selectedSubjectId) ||
-                                     isLoading}
+                            disabled={(userType === 'student' && !selectedStudentId) ||
+                                (userType === 'teacher' && !selectedSubjectId) ||
+                                isLoading}
                         >
                             Fetch Results
                         </Button>
@@ -798,9 +807,20 @@ const ViewResults = () => {
                         <div className="space-y-4">
                             {Object.entries(groupResultsByExamType(results)).map(([examType, examResults], index) => (
                                 <div key={index} className="collapse collapse-arrow bg-base-200 border-2 border-base-300 rounded-lg mb-2">
-                                    <input type="checkbox" /> 
-                                    <div className="collapse-title text-xl font-medium text-base-content">
-                                        {examType} ({examResults.length} results)
+                                    <input type="checkbox" />
+                                    <div className="collapse-title text-xl font-medium text-base-content flex items-center gap-2">
+                                        {examType}
+                                        <div className={`
+                                            text-xs py-0.5 px-2.5 rounded-full
+                                            dark:bg-primary/20 dark:text-base-content/90
+                                            bg-primary/10 text-base-content/90
+                                            backdrop-blur-sm
+                                            border border-primary/10
+                                            shadow-sm
+                                            transition-all duration-200
+                                        `}>
+                                            {examResults.length === 1 ? '1 subject' : `${examResults.length} subjects`}
+                                        </div>
                                     </div>
                                     <div className="collapse-content bg-base-100">
                                         <div className="overflow-x-auto">
@@ -860,8 +880,19 @@ const ViewResults = () => {
                             {Object.entries(groupResultsByStudent(allStudentResults)).map(([studentId, data], index) => (
                                 <div key={studentId} className="collapse collapse-arrow bg-base-200 border-2 border-base-300 rounded-lg mb-2">
                                     <input type="checkbox" />
-                                    <div className="collapse-title text-xl font-medium text-base-content">
-                                        {data.studentName} ({data.results.length} results)
+                                    <div className="collapse-title text-xl font-medium text-base-content flex items-center gap-2">
+                                        {data.studentName}
+                                        <div className={`
+                                            text-xs py-0.5 px-2.5 rounded-full
+                                            dark:bg-primary/20 dark:text-base-content/90
+                                            bg-primary/10 text-base-content/90
+                                            backdrop-blur-sm
+                                            border border-primary/10
+                                            shadow-sm
+                                            transition-all duration-200
+                                        `}>
+                                            {data.results.length === 1 ? '1 result' : `${data.results.length} results`}
+                                        </div>
                                     </div>
                                     <div className="collapse-content bg-base-100">
                                         <div className="overflow-x-auto">
@@ -882,7 +913,7 @@ const ViewResults = () => {
                                                 <tbody>
                                                     {data.results.map((result: any, resultIndex: number) => (
                                                         <tr key={resultIndex} className="text-base-content">
-                                                            <td>{result.examType || 'N/A'}</td>
+                                                            <td>{result.examType.type}</td>
                                                             <td>{formatDate(result.examDate)}</td>
                                                             <td>{getSubjectName(result.subjectId)}</td>
                                                             <td>{result.totalMarks}</td>
@@ -908,8 +939,8 @@ const ViewResults = () => {
                                                             <td>{result.present ? (result.grade || calculateGrade(result.marks || 0, result.totalMarks)) : 'N/A'}</td>
                                                             <td>
                                                                 {result.staffId === userId && (
-                                                                    <Edit 
-                                                                        className="h-5 w-5 cursor-pointer text-primary" 
+                                                                    <Edit
+                                                                        className="h-5 w-5 cursor-pointer text-primary"
                                                                         onClick={() => handleEditClick(result)}
                                                                     />
                                                                 )}
@@ -923,8 +954,8 @@ const ViewResults = () => {
                                 </div>
                             ))}
                         </div>
-                    ) : selectedStudentId && hasFetchedResults || 
-                       (userType === 'teacher' && selectedSubjectId && hasFetchedResults) ? (
+                    ) : selectedStudentId && hasFetchedResults ||
+                        (userType === 'teacher' && selectedSubjectId && hasFetchedResults) ? (
                         <div className="text-center my-8">
                             <p className="text-lg text-base-content">No results found for the selected criteria.</p>
                         </div>
@@ -936,12 +967,12 @@ const ViewResults = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-base-100 p-6 rounded-lg shadow-lg w-96">
                         <h3 className="text-lg font-bold mb-4 text-base-content">Update Result</h3>
-                        
+
                         <div className="mb-4">
-                            <p className="text-sm text-base-content mb-1">Exam: {editingResult.examType || 'N/A'}</p>
+                            <p className="text-sm text-base-content mb-1">Exam: {editingResult.examType?.type}</p>
                             <p className="text-sm text-base-content mb-1">Date: {formatDate(editingResult.examDate)}</p>
                             <p className="text-sm text-base-content mb-3">Total Marks: {editingResult.totalMarks}</p>
-                            
+
                             {/* Attendance toggle */}
                             <label className="label cursor-pointer justify-start gap-2 mb-4">
                                 <span className="label-text text-base-content">Attendance Status:</span>
@@ -956,7 +987,7 @@ const ViewResults = () => {
                                     <span className={`ml-2 text-base-content ${updatedAttendance ? 'font-bold' : ''}`}>Present</span>
                                 </div>
                             </label>
-                            
+
                             {/* Only render marks input when attendance is present */}
                             {updatedAttendance && (
                                 <div className="mt-2">
@@ -975,7 +1006,7 @@ const ViewResults = () => {
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className="flex justify-end gap-2">
                             <Button
                                 type="button"

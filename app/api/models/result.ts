@@ -60,7 +60,11 @@ const ResultSchema = new mongoose.Schema(
         present: { type: Boolean, required: true },
       },
     ],
-    examType: { type: String, required: true },
+    examType: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "examTypes",
+      required: true,
+    },
     clientOrganizationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "clientorganizations",

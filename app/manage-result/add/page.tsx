@@ -39,6 +39,7 @@ export default function AddResultPage() {
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState('');
     const [academicYearStart, setAcademicYearStart] = useState<string>('');
     const [academicYearEnd, setAcademicYearEnd] = useState<string>('');
+    const [examTypes, setExamTypes] = useState<{ _id: string, type: string }[]>([]);
 
     // Define Zod schema for form validation with conditional validation
     const resultFormSchema = z.object({
@@ -297,6 +298,24 @@ export default function AddResultPage() {
         }
     }, [examType, otherExamType, setValue]);
 
+    useEffect(() => {
+        const fetchExamTypes = async () => {
+            try {
+                const response = await fetch('/api/examType');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch exam types');
+                }
+                const data = await response.json();
+                setExamTypes(data);
+            } catch (error) {
+                console.error('Error fetching exam types:', error);
+                toast.error('Failed to load exam types');
+            }
+        };
+
+        fetchExamTypes();
+    }, []);
+
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         // Custom validation for student records
         const newErrors: { [key: string]: string } = {};
@@ -524,10 +543,11 @@ export default function AddResultPage() {
                                         }}
                                     >
                                         <option value="">Select Exam Type</option>
-                                        <option value="unit-test">Unit Test</option>
-                                        <option value="half-yearly">Half-Yearly Exam</option>
-                                        <option value="final">Final Exam</option>
-                                        <option value="other">Other</option>
+                                        {examTypes.map((type) => (
+                                            <option key={type._id} value={type._id}>
+                                                {type.type}
+                                            </option>
+                                        ))}
                                     </select>
                                 )}
                                 {formErrors.examType && (
