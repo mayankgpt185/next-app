@@ -12,7 +12,6 @@ import "@/app/api/models/organization";
 import StudentClass from "../models/studentClass";
 import "@/app/api/models/class";
 import "@/app/api/models/section";
-import { RoleType } from "../eunm/roleType";
 
 // Helper function to get token from request
 const getTokenFromRequest = async (request: NextRequest) => {
