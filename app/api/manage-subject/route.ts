@@ -7,6 +7,8 @@ import Session from "../models/session";
 import { Section } from "../models/section";
 import { UserJwtPayload } from "@/lib/auth";
 import jwt from "jsonwebtoken";
+import { UserRole } from "@/lib/role";
+import StudentClass from "../models/studentClass";
 
 const getTokenFromRequest = async (request: NextRequest) => {
   const authHeader = request.headers.get("authorization");
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
       staffIds: staffIds,
       academicYearId: data.academicYearId,
       sectionIds: sectionIds,
+      clientOrganizationId: clientOrganizationId
     });
 
     return NextResponse.json(subject);
@@ -110,10 +113,48 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    const academicYear = searchParams.get("academicYear");
+    const academicYearId = searchParams.get("academicYearId");
     const classId = searchParams.get("classId");
     const sectionId = searchParams.get("sectionId");
+    const studentId = searchParams.get("studentId");
+    const role = searchParams.get("role");
 
+    if (role === UserRole.STUDENT && studentId && academicYearId) {
+      const studentClass = await StudentClass.findOne({
+        studentId: studentId,
+        isActive: true,
+      });
+
+      if (studentClass) {
+        const courseList = await Course.find({
+          class: studentClass.class._id,
+          isActive: true,
+          clientOrganizationId,
+        });
+
+        const subjects = await Subject.find({
+          isActive: true,
+          clientOrganizationId,
+          academicYearId: academicYearId,
+          sectionIds: { $in: studentClass.section._id },
+        })
+          .where("courseId")
+          .in(courseList.map((course) => course._id))
+          .populate({
+            path: "courseId",
+            select: "_id class",
+            populate: {
+              path: "class",
+              select: "_id classNumber",
+            },
+          })
+          .populate("staffIds", "_id firstName lastName")
+          .populate("sectionIds", "_id section")
+          .select("-__v");
+
+        return NextResponse.json(subjects);
+      }
+    }
     if (classId && sectionId) {
       // First, find all courses with the specified class ID
       const courses = await Course.find({
@@ -156,13 +197,20 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.json(subject);
-    } else if (academicYear) {
+    } else if (academicYearId) {
       const subjects = await Subject.find({
-        academicYearId: academicYear,
+        academicYearId: academicYearId,
+        clientOrganizationId: clientOrganizationId,
         isActive: true,
       })
-        .where({ clientOrganizationId })
-        .populate("courseId")
+        .populate({
+          path: "courseId",
+          select: "_id class",
+          populate: {
+            path: "class",
+            select: "_id classNumber",
+          },
+        })
         .populate("staffIds")
         .populate("academicYearId")
         .populate("sectionIds")

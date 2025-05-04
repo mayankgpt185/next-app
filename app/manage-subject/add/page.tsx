@@ -128,7 +128,7 @@ export default function AddSubjectPage() {
         const fetchData = async () => {
             try {
                 const [coursesResponse, staffsResponse, sectionsResponse, academicYearsResponse] = await Promise.all([
-                    fetch('/api/manage-course'),
+                    fetch('/api/manage-course?academicYearId='),
                     fetch(`/api/manage-staff?role=${staffRole}`),
                     fetch('/api/sections'),
                     fetch('/api/session')

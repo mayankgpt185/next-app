@@ -101,7 +101,7 @@ export default function AttendanceAddPage() {
             try {
                 setIsLoadingSubjects(true);
                 const [subjectsResponse, classesResponse, sectionsResponse] = await Promise.all([
-                    fetch(`/api/manage-subject?academicYear=${selectedYear}`),
+                    fetch(`/api/manage-subject?academicYearId=${selectedYear}`),
                     fetch('/api/classes'),
                     fetch('/api/sections')
                 ]);

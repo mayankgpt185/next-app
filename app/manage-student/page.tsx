@@ -11,14 +11,20 @@ import toast from 'react-hot-toast';
 
 interface StudentMember {
     _id: number;
-    firstName: string;
-    lastName: string;
-    class: string;
-    section: string;
-    email: string;
-    address: string;
-    lastLogin: string;
-    dateJoined: string;
+    studentId: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        address: string;
+        lastLogin: string;
+        dateJoined: string;
+    };
+    class: {
+        classNumber: string;
+    };
+    section: {
+        section: string;
+    };
 }
 
 export default function ManageStudentPage() {
@@ -30,8 +36,6 @@ export default function ManageStudentPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
-    const [userClass, setUserClass] = useState<string>('');
-    const [userSection, setUserSection] = useState<string>('');
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -43,60 +47,24 @@ export default function ManageStudentPage() {
             const userId = decodedPayload.id;
             setUserRole(userRole);
             setUserId(userId);
-        }
 
-        const fetchStudent = async () => {
-            try {
-                const response = await fetch(`/api/manage-staff?role=${studentRole}`);
-                const studentClassResponse = await fetch(`/api/student-class`);
-                if (!response.ok || !studentClassResponse.ok) throw new Error('Failed to fetch student');
-                const data = await response.json();
-                const studentClassData = await studentClassResponse.json();
-
-                data.forEach((student: StudentMember) => {
-                    const matchingClass = studentClassData.find((cls: any) => cls.studentId === student._id);
-                    if (matchingClass) {
-                        student.class = matchingClass.class.classNumber || '';
-                        student.section = matchingClass.section.section || '';
+            // Only fetch student data after userId is set
+            if (userId) {
+                const fetchStudent = async () => {
+                    try {
+                        const response = await fetch(`/api/manage-staff?role=${studentRole}&id=${userId}`);
+                        const studentClassData = await response.json();
+                        setStudent(studentClassData);
+                    } catch (error) {
+                        console.error('Error fetching student:', error);
+                    } finally {
+                        setIsLoading(false);
                     }
-                });
-
-                // If logged in as student, get their class and section
-                if (userRole === 'STUDENT' && userId) {
-                    const currentStudent = data.find((student: StudentMember) => student._id === userId);
-                    if (currentStudent) {
-                        setUserClass(currentStudent.class);
-                        setUserSection(currentStudent.section);
-                    }
-                }
-
-                setStudent(data);
-            } catch (error) {
-                console.error('Error fetching student:', error);
-            } finally {
-                setIsLoading(false);
+                };
+                fetchStudent();
             }
-        };
-        fetchStudent();
-    }, [userRole, userId]);
-
-    // Filter students by search term AND by class/section if user is a student
-    const filteredStudent = studentMembers.filter(student => {
-        // First apply search filter
-        const matchesSearch = Object.values(student).some(value =>
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        // If user is a student, also filter by class and section
-        if (userRole === 'STUDENT' && userClass && userSection) {
-            return matchesSearch &&
-                student.class === userClass &&
-                student.section === userSection;
         }
-
-        // Otherwise just return search results
-        return matchesSearch;
-    });
+    }, [userRole, userId]);
 
     const handleDeleteClick = (studentId: number) => {
         setSelectedStudentId(studentId);
@@ -179,16 +147,16 @@ export default function ManageStudentPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredStudent.length > 0 ? (
-                                        filteredStudent.map((student) => (
+                                    {studentMembers.length > 0 ? (
+                                        studentMembers.map((student) => (
                                             <tr key={student._id} className="hover:bg-base-200">
-                                                <td className="text-base-content">{student.firstName}</td>
-                                                <td className="text-base-content">{student.lastName}</td>
-                                                <td className="text-base-content">{student.class} {student.section}</td>
-                                                <td className="text-base-content">{student.email}</td>
-                                                <td className="text-base-content">{student.address}</td>
-                                                <td className="text-base-content">{student?.lastLogin || 'N/A'}</td>
-                                                <td className="text-base-content">{formatDate(student.dateJoined)}</td>
+                                                <td className="text-base-content">{student.studentId.firstName}</td>
+                                                <td className="text-base-content">{student.studentId.lastName}</td>
+                                                <td className="text-base-content">{student.class.classNumber} {student.section.section}</td>
+                                                <td className="text-base-content">{student.studentId.email}</td>
+                                                <td className="text-base-content">{student.studentId.address}</td>
+                                                <td className="text-base-content">{student.studentId?.lastLogin || 'N/A'}</td>
+                                                <td className="text-base-content">{formatDate(student.studentId?.dateJoined || '')}</td>
                                                 {userRole !== 'STUDENT' && (
                                                     <td>
                                                         <div className="flex gap-2">

@@ -5,7 +5,9 @@ import bcrypt from "bcryptjs";
 import { Class } from "../models/class";
 import { UserJwtPayload } from "@/lib/auth";
 import jwt from "jsonwebtoken";
-
+import { UserRole } from "@/lib/role";
+import StudentClass from "../models/studentClass";
+import toast from "react-hot-toast";
 const getTokenFromRequest = async (request: NextRequest) => {
   const authHeader = request.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -73,7 +75,25 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    if (id) {
+    const studentId = searchParams.get("studentId");
+    const role = searchParams.get("role");
+    if(role === UserRole.STUDENT && studentId){
+      const studentClass = await StudentClass.findOne({ studentId: studentId })
+        .populate("class", "_id classNumber")
+      if (studentClass) {
+        const courses = await Course.find({
+          class: studentClass.class,
+        })
+          .where({ isActive: true })
+          .where({ class: studentClass.class._id })
+          .where({ clientOrganizationId })
+          .populate("class")
+          .select("-__v");
+
+        return NextResponse.json(courses);
+      }
+    }
+    else if (id) {
       const course = await Course.findById(id)
         .where({ isActive: true })
         .where({ clientOrganizationId })
@@ -98,6 +118,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(courses);
     }
   } catch (error) {
+    toast.error("Failed to fetch courses");
     console.error("Error in GET /api/manage-course:", error);
     return NextResponse.json(
       { error: "Failed to fetch courses" },
@@ -153,6 +174,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(course);
   } catch (error) {
+    toast.error("Failed to update course");
     console.error("Error in PUT /api/manage-course:", error);
     return NextResponse.json(
       { error: "Failed to update course" },

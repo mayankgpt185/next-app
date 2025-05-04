@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     const session = await Session.create({
       startDate: data.startDate,
       endDate: data.endDate,
+      clientOrganizationId: clientOrganizationId,
       isActive: true,
       addedDate: new Date(),
     });

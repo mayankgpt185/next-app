@@ -14,46 +14,50 @@ const Sidebar = () => {
   const [currentPath, setCurrentPath] = useState('');
   const [showScrollUp, setShowScrollUp] = useState(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   useEffect(() => {
     // Initialize theme state
     setCurrentTheme(document.documentElement.getAttribute('data-theme') as 'light' | 'dark' || 'light');
     setCurrentPath(window.location.pathname);
-    
+
     // Get data from localStorage (safely, in case of SSR)
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem('token');
-      if (storedToken) {
+      if (!storedToken) {
+        router.push('/login');
+      } else if (!userId) {
         const decodedPayload = JSON.parse(atob(storedToken.split('.')[1]));
         setUserRole(decodedPayload.role as UserRole);
         setUserName(decodedPayload.name);
         setUserEmail(decodedPayload.email);
-        
+        setUserId(decodedPayload.id);
+
         // Fetch user profile to get profile image
-        fetch(`/api/manage-staff?id=${decodedPayload.id}`)
-          .then(response => {
-            if (response.ok) return response.json();
-            throw new Error('Failed to fetch profile');
-          })
-          .then(userData => {
-            if (userData.profileImage) {
-              setProfileImage(userData.profileImage);
-            }
-          })
-          .catch(error => {
-            toast.error('Failed to fetch profile image');
-          });
+        if (userId) {
+          fetch(`/api/manage-staff?id=${userId}`)
+            .then(response => {
+              if (response.ok) return response.json();
+              throw new Error('Failed to fetch profile');
+            })
+            .then(userData => {
+              if (userData.profileImage) {
+                setProfileImage(userData.profileImage);
+              }
+            })
+            .catch(error => {
+              toast.error('Failed to fetch profile image');
+            });
+        }
       }
     }
-  }, []);
+  }, [userId]);
 
   // Close the profile menu when clicking outside
   useEffect(() => {
@@ -89,10 +93,10 @@ const Sidebar = () => {
   // Function to check if a user can access a route
   const canAccessRoute = (route: string): boolean => {
     if (!userRole) return false;
-    
+
     const userRoleAccess = roleAccess.find(access => access.role === userRole);
     if (!userRoleAccess) return false;
-    
+
     return userRoleAccess.routes.includes(route);
   };
 
@@ -172,7 +176,7 @@ const Sidebar = () => {
             </div>
           )}
           <div ref={scrollRef} className="flex flex-col space-y-2 overflow-y-auto custom-scrollbar-sidebar h-full">
-          {canAccessRoute('/manage-admin') && (
+            {canAccessRoute('/manage-admin') && (
               <div className="tooltip tooltip-right" data-tip="Manage Admin">
                 <button
                   className={`btn btn-ghost flex items-center justify-start w-full ${currentPath === '/manage-admin' ? 'btn-active' : ''}`}
@@ -197,7 +201,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/manage-student') && (
               <div className="tooltip tooltip-right" data-tip="Manage Student">
                 <button
@@ -210,7 +214,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/manage-course') && (
               <div className="tooltip tooltip-right" data-tip="Manage Course">
                 <button
@@ -223,7 +227,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/manage-subject') && (
               <div className="tooltip tooltip-right" data-tip="Manage Subject">
                 <button
@@ -236,7 +240,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/attendance/add') && (
               <div className="tooltip tooltip-right" data-tip="Take Attendance">
                 <button
@@ -249,7 +253,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/attendance') && (
               <div className="tooltip tooltip-right" data-tip="View Attendance">
                 <button
@@ -262,7 +266,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/manage-leave/add') && (
               <div className="tooltip tooltip-right" data-tip="Apply Leave">
                 <button
@@ -275,7 +279,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/manage-leave') && (
               <div className="tooltip tooltip-right" data-tip="View Leave">
                 <button
@@ -288,7 +292,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/manage-result/add') && (
               <div className="tooltip tooltip-right" data-tip="Add Result">
                 <button
@@ -301,7 +305,7 @@ const Sidebar = () => {
                 </button>
               </div>
             )}
-            
+
             {canAccessRoute('/manage-result') && (
               <div className="tooltip tooltip-right" data-tip="View Result">
                 <button
@@ -328,7 +332,7 @@ const Sidebar = () => {
         {isExpanded ? (
           <div className="p-4 border-t border-base-200">
             <div className="relative" ref={profileMenuRef}>
-              <Card 
+              <Card
                 className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 p-3 mb-3 cursor-pointer"
                 onClick={toggleProfileMenu}
               >
@@ -345,12 +349,12 @@ const Sidebar = () => {
                   </div>
                 </div>
               </Card>
-              
+
               {showProfileMenu && (
                 <div className="absolute bottom-full left-0 mb-2 w-full bg-base-100 rounded-md shadow-lg z-50 overflow-hidden border border-base-300">
                   <ul className="py-1">
                     <li>
-                      <button 
+                      <button
                         onClick={handleProfileClick}
                         className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-base-content"
                       >
@@ -359,7 +363,7 @@ const Sidebar = () => {
                       </button>
                     </li>
                     <li>
-                      <button 
+                      <button
                         onClick={() => {
                           handleNavigation('/calendar');
                           setShowProfileMenu(false);
@@ -371,7 +375,7 @@ const Sidebar = () => {
                       </button>
                     </li>
                     <li>
-                      <button 
+                      <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-error"
                       >
@@ -383,7 +387,7 @@ const Sidebar = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="join w-full mb-3">
               <button
                 onClick={() => setTheme('light')}
@@ -405,23 +409,23 @@ const Sidebar = () => {
           <div className="p-4 border-t border-base-200">
             <div className="flex flex-col items-center space-y-2">
               <div className="avatar tooltip tooltip-right relative" ref={profileMenuRef}>
-                <div 
+                <div
                   className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 cursor-pointer hover:opacity-80 hover:ring-secondary transition-all duration-200"
                   onClick={toggleProfileMenu}
                 >
                   <img src={profileImage || '/images/mayank.jpg'} alt="User" />
                 </div>
-                
+
                 {showProfileMenu && (
-                  <div className="fixed ml-2 bg-base-100 rounded-md shadow-lg z-[9999] w-32 overflow-hidden border border-base-300" 
-                    style={{ 
-                      left: '4rem', 
+                  <div className="fixed ml-2 bg-base-100 rounded-md shadow-lg z-[9999] w-32 overflow-hidden border border-base-300"
+                    style={{
+                      left: '4rem',
                       top: `${(profileMenuRef.current?.getBoundingClientRect().top || 0) - 100}px`,
                       maxHeight: '200px',
                     }}>
                     <ul className="py-1">
                       <li>
-                        <button 
+                        <button
                           onClick={handleProfileClick}
                           className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-base-content"
                         >
@@ -430,11 +434,11 @@ const Sidebar = () => {
                         </button>
                       </li>
                       <li>
-                        <button 
+                        <button
                           onClick={() => {
                             handleNavigation('/calendar');
                             setShowProfileMenu(false);
-                          }}  
+                          }}
                           className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-base-content"
                         >
                           <lucideReact.Calendar className="w-4 h-4 mr-2" />
@@ -442,7 +446,7 @@ const Sidebar = () => {
                         </button>
                       </li>
                       <li>
-                        <button 
+                        <button
                           onClick={handleLogout}
                           className="w-full text-left px-4 py-2 hover:bg-base-200 flex items-center text-error"
                         >
@@ -454,7 +458,7 @@ const Sidebar = () => {
                   </div>
                 )}
               </div>
-              
+
               <button
                 onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
                 className="btn btn-ghost btn-circle"

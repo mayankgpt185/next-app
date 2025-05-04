@@ -8,6 +8,7 @@ import { Card } from '../components/ui/card';
 import { formatDate } from '@/utils/dateUtils';
 import ModalPopup from '../components/ui/modalPopup';
 import toast from 'react-hot-toast';
+import { UserRole } from '@/lib/role';
 
 interface Course {
     _id: string;
@@ -43,39 +44,22 @@ export default function ManageCoursePage() {
             setUserId(userId);
         }
 
-        const fetchStudentClassInfo = async () => {
-            if (userRole === 'STUDENT' && userId) {
+        if (userId) {
+            const fetchCourse = async () => {
                 try {
-                    const response = await fetch(`/api/student-class?studentId=${userId}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data && data.class && data.class._id) {
-                            setUserClassId(data.class._id);
-                        }
-                    }
+                    const response = userRole === UserRole.STUDENT && userId ? await fetch(`/api/manage-course?studentId=${userId}&role=${userRole}`) : await fetch(`/api/manage-course`);
+                    if (!response.ok) throw new Error('Failed to fetch course');
+                    const data = await response.json();
+                    console.log(data);
+                    setCourse(data);
                 } catch (error) {
-                    console.error('Error fetching student class info:', error);
+                    console.error('Error fetching course:', error);
+                    toast.error('Failed to fetch courses');
+                } finally {
+                    setIsLoading(false);
                 }
-            }
-        };
-
-        const fetchCourse = async () => {
-            try {
-                const response = await fetch(`/api/manage-course`);
-                if (!response.ok) throw new Error('Failed to fetch course');
-                const data = await response.json();
-                setCourse(data);
-            } catch (error) {
-                console.error('Error fetching course:', error);
-                toast.error('Failed to fetch courses');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchCourse();
-        if (userRole === 'STUDENT' && userId) {
-            fetchStudentClassInfo();
+            };
+            fetchCourse();
         }
     }, [userRole, userId]);
 

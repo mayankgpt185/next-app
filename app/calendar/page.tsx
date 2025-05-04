@@ -160,22 +160,6 @@ const CalendarPage = () => {
       if (!response.ok) throw new Error('Failed to fetch subjects for this class');
       const allSubjects = await response.json();
 
-      // Fetch existing exams to check which subjects are already scheduled
-      // const examsResponse = await fetch(`/api/manage-exam?academicYearId=${selectedAcademicYear._id}&classId=${classId}&examType=${examFormData.examType}`);
-      // if (!examsResponse.ok) throw new Error('Failed to fetch existing exams');
-      // const existingExams = await examsResponse.json();
-
-      // // Extract subject IDs that already have exams for this class and exam type
-      // const scheduledSubjectIds = existingExams.map((exam: any) =>
-      //   typeof exam.subjectId === 'object' ? exam.subjectId._id : exam.subjectId
-      // );
-
-      // // Filter out subjects that already have exams scheduled
-      // const availableSubjects = allSubjects.filter((subject: any) =>
-      //   !scheduledSubjectIds.includes(subject._id)
-      // );
-
-      // console.log('Available subjects after filtering:', availableSubjects);
       setSubjects(allSubjects);
     } catch (error) {
       console.error('Error fetching subjects for class:', error);

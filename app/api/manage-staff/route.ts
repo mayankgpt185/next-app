@@ -12,6 +12,7 @@ import "@/app/api/models/organization";
 import StudentClass from "../models/studentClass";
 import "@/app/api/models/class";
 import "@/app/api/models/section";
+import { RoleType } from "../eunm/roleType";
 
 // Helper function to get token from request
 const getTokenFromRequest = async (request: NextRequest) => {
@@ -112,7 +113,37 @@ export async function GET(request: NextRequest) {
     const clientOrganizationId = token.clientOrganizationId;
     const userRole = token.role;
 
-    if (id) {
+    if (role === UserRole.STUDENT && id) {
+      const userData = await User.findOne({
+        role: role,
+        _id: id,
+        isActive: true,
+        clientOrganizationId,
+      });
+      if (userData) {
+        const studentClassSection = await StudentClass.findOne({
+          studentId: userData._id,
+        });
+
+        const userList = await User.find({
+          role: role,
+          isActive: true,
+          clientOrganizationId,
+        });
+
+        const studentClass = await StudentClass.find()
+          .where("studentId")
+          .in(userList.map((user) => user._id))
+          .where({ class: studentClassSection.class })
+          .where({ section: studentClassSection.section })
+          .populate("studentId")
+          .populate("class", "_id classNumber")
+          .populate("section", "_id section")
+          .select("-password -__v");
+
+        return NextResponse.json(studentClass, { status: 200 });
+      }
+    } else if (id) {
       // If ID is provided, fetch a specific staff member
 
       let query = User.findById(id);
@@ -146,16 +177,20 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      if (userRole === "STUDENT") {
+      if (userRole === UserRole.STUDENT) {
         const studentClass = await StudentClass.findOne({ studentId: id })
           .populate("class", "_id classNumber")
           .populate("section", "_id section");
         if (studentClass) {
-          const staffMemberObj = staffMember.toObject 
+          const staffMemberObj = staffMember.toObject
             ? staffMember.toObject()
             : staffMember;
           return NextResponse.json(
-            { ...staffMemberObj, class: studentClass.class, section: studentClass.section },
+            {
+              ...staffMemberObj,
+              class: studentClass.class,
+              section: studentClass.section,
+            },
             { status: 200 }
           );
         }
@@ -188,6 +223,14 @@ export async function GET(request: NextRequest) {
         .select("-password -__v")
         .sort({ createdAt: -1 });
 
+      if (userRole === "STUDENT") {
+        const studentClass = await StudentClass.findOne({ studentId: id })
+          .populate("class", "_id classNumber")
+          .populate("section", "_id section");
+        if (studentClass) {
+          return NextResponse.json(studentClass, { status: 200 });
+        }
+      }
       return NextResponse.json(staffMembers, { status: 200 });
     }
   } catch (error: any) {

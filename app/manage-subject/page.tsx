@@ -1,21 +1,23 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { formatDate } from '@/utils/dateUtils';
 import ModalPopup from '../components/ui/modalPopup';
 import toast from 'react-hot-toast';
+import { UserRole } from '@/lib/role';
 
 interface Subject {
     _id: string;
     subject: string;
     classNumber: string;
     courseId: {
-        class: string;
-        name: string;
+        class: {
+            classNumber: string;
+        };
         _id: string;
     };
     sectionIds: {
@@ -40,13 +42,14 @@ interface Subject {
 export default function ManageSubjectPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [subjects, setSubjects] = useState<Subject[]>([]);
-    const [classes, setClasses] = useState<any[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
-    const [userClassId, setUserClassId] = useState<string | null>(null);
+    const [academicYears, setAcademicYears] = useState<Subject['academicYearId'][]>([]);
+    const [selectedAcademicYear, setSelectedAcademicYear] = useState<Subject['academicYearId'] | null>(null);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -60,74 +63,99 @@ export default function ManageSubjectPage() {
             setUserId(userId);
         }
 
-        const fetchStudentClassInfo = async () => {
-            if (userRole === 'STUDENT' && userId) {
+        if (userId) {
+            const fetchData = async () => {
                 try {
-                    const response = await fetch(`/api/student-class?studentId=${userId}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data && data.class && data.class._id) {
-                            setUserClassId(data.class._id);
-                        }
-                    }
+                    setIsLoading(true);
+                    
+                    // Fetch academic years
+                    const academicYearsResponse = await fetch('/api/session');
+                    if (!academicYearsResponse.ok) throw new Error('Failed to fetch academic years');
+                    const academicYearsData = await academicYearsResponse.json();
+                    setAcademicYears(academicYearsData);
+
+                    // Find current academic year or default to the first one
+                    const currentDate = new Date();
+                    const currentYear = academicYearsData.find((year: any) => {
+                        const startDate = new Date(year.startDate);
+                        const endDate = new Date(year.endDate);
+                        return currentDate >= startDate && currentDate <= endDate;
+                    }) || (academicYearsData.length > 0 ? academicYearsData[0] : null);
+
+                    setSelectedAcademicYear(currentYear);
+                    
+                    // Fetch subjects
+                    const subjectsResponse = userRole === UserRole.STUDENT && userId 
+                        ? await fetch(`/api/manage-subject?studentId=${userId}&role=${userRole}&academicYearId=${currentYear._id}`) 
+                        : await fetch(`/api/manage-subject?academicYearId=${currentYear._id}`);
+
+                    if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
+                    const subjectsData = await subjectsResponse.json();
+                    setSubjects(subjectsData);
                 } catch (error) {
-                    console.error('Error fetching student class info:', error);
+                    console.error('Error fetching data:', error);
+                    toast.error('Failed to fetch data');
+                } finally {
+                    setIsLoading(false);
                 }
-            }
-        };
+            };
 
-        const fetchData = async () => {
-            try {
-                setIsLoading(true);
-                // Fetch subjects
-                const subjectsResponse = await fetch(`/api/manage-subject`);
-                if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
-                const subjectsData = await subjectsResponse.json();
-
-                // Fetch classes
-                const classesResponse = await fetch(`/api/classes`);
-                if (!classesResponse.ok) throw new Error('Failed to fetch classes');
-                const classesData = await classesResponse.json();
-
-                setSubjects(subjectsData);
-                setClasses(classesData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                toast.error('Failed to fetch data');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchData();
-        if (userRole === 'STUDENT' && userId) {
-            fetchStudentClassInfo();
+            fetchData();
         }
     }, [userRole, userId]);
 
-    // Get class name by ID
-    const getClassName = (classId: string) => {
-        const foundClass = classes.find(c => c._id === classId);
-        return foundClass ? foundClass.classNumber : 'N/A';
+    // Effect to close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.academic-year-dropdown')) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Format academic year label
+    const formatAcademicYearLabel = (year: Subject['academicYearId']) => {
+        const startDate = new Date(year.startDate);
+        const endDate = new Date(year.endDate);
+        return `${startDate.toLocaleString('default', { month: 'short' })} ${startDate.getFullYear()} - ${endDate.toLocaleString('default', { month: 'short' })} ${endDate.getFullYear()}`;
+    };
+
+    // Handle academic year change
+    const handleAcademicYearChange = async (year: Subject['academicYearId']) => {
+        setSelectedAcademicYear(year);
+        setIsDropdownOpen(false);
+        
+        try {
+            setIsLoading(true);
+            // Fetch subjects for the selected academic year
+            const subjectsResponse = userRole === UserRole.STUDENT && userId 
+                ? await fetch(`/api/manage-subject?studentId=${userId}&role=${userRole}&academicYearId=${year._id}`) 
+                : await fetch(`/api/manage-subject?academicYearId=${year._id}`);
+
+            if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
+            const subjectsData = await subjectsResponse.json();
+            setSubjects(subjectsData);
+        } catch (error) {
+            console.error('Error fetching subjects:', error);
+            toast.error('Failed to fetch subjects');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const filteredSubjects = subjects.filter(subject => {
         // Apply search filter
         const matchesSearch = subject.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (subject.courseId && subject.courseId.class &&
-                subject.courseId.class.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (subject.classNumber &&
-                subject.classNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (subject.sectionIds && Array.isArray(subject.sectionIds) &&
-                subject.sectionIds.some(section =>
-                    section.section.toLowerCase().includes(searchTerm.toLowerCase())
-                ));
-
-        // If user is a student, also filter by class ID
-        if (userRole === 'STUDENT' && userClassId) {
-            return matchesSearch && subject.courseId && subject.courseId.class === userClassId;
-        }
-
+                subject.courseId.class.classNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (subject.sectionIds && subject.sectionIds[0] &&
+                subject.sectionIds[0].section.toLowerCase().includes(searchTerm.toLowerCase()));
         return matchesSearch;
     });
 
@@ -184,14 +212,45 @@ export default function ManageSubjectPage() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        {userRole !== 'STUDENT' && (
-                            <Link href="/manage-subject/add">
-                                <Button variant="primary" type="submit" outline>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add Subject
-                                </Button>
-                            </Link>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {/* Academic Year Dropdown */}
+                            {selectedAcademicYear && (
+                                <div className="relative academic-year-dropdown">
+                                    <button
+                                        className="btn btn-sm btn-outline border-base-300 bg-base-100 text-base-content flex items-center gap-2"
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    >
+                                        {formatAcademicYearLabel(selectedAcademicYear)}
+                                        <ChevronDown className="h-4 w-4" />
+                                    </button>
+
+                                    {isDropdownOpen && (
+                                        <div className="absolute right-0 mt-1 w-64 bg-base-100 shadow-lg rounded-md border border-base-300 z-10">
+                                            <ul className="py-1">
+                                                {academicYears.map((year) => (
+                                                    <li key={year._id}>
+                                                        <button
+                                                            className={`w-full text-left px-4 py-2 hover:bg-base-200 ${selectedAcademicYear._id === year._id ? 'bg-base-200 text-primary' : 'text-base-content'}`}
+                                                            onClick={() => handleAcademicYearChange(year)}
+                                                        >
+                                                            {formatAcademicYearLabel(year)}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {userRole !== 'STUDENT' && (
+                                <Link href="/manage-subject/add">
+                                    <Button variant="primary" type="submit" outline>
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add Subject
+                                    </Button>
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto flex-1">
@@ -202,7 +261,6 @@ export default function ManageSubjectPage() {
                                         <th className="text-base-content">Subject Name</th>
                                         <th className="text-base-content">Class & Section</th>
                                         <th className="text-base-content">Staff</th>
-                                        <th className="text-base-content">Academic Year</th>
                                         <th className="text-base-content">Created Date</th>
                                         <th className="text-base-content">Updated Date</th>
                                         {userRole !== 'STUDENT' && (
@@ -216,10 +274,7 @@ export default function ManageSubjectPage() {
                                             <tr key={subject._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{subject.subject}</td>
                                                 <td className="text-base-content">
-                                                    {getClassName(subject.courseId && subject.courseId.class ? subject.courseId.class : subject.classNumber)} - {Array.isArray(subject.sectionIds)
-                                                        ? subject.sectionIds.map(section => section.section).join(', ')
-                                                        : 'N/A'
-                                                    }
+                                                    {subject.courseId.class.classNumber} - {subject.sectionIds.map(section => section.section).join(', ')}
                                                 </td>
                                                 <td className="text-base-content">
                                                     {Array.isArray(subject.staffIds)
@@ -227,9 +282,6 @@ export default function ManageSubjectPage() {
                                                             `${staff.firstName} ${staff.lastName}`).join(', ')
                                                         : 'N/A'
                                                     }
-                                                </td>
-                                                <td className="text-base-content">
-                                                    {new Date(subject.academicYearId.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {new Date(subject.academicYearId.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                                 </td>
                                                 <td className="text-base-content">{formatDate(subject.createdAt)}</td>
                                                 <td className="text-base-content">{formatDate(subject?.updatedAt) || 'N/A'}</td>
