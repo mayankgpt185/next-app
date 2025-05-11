@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/ta
 import { GraduationCap, Palmtree, ChevronDown, Plus, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/button';
+import AcademicYearDropdown from '../components/ui/academicYearDropdown';
+import { ISession } from '../api/models/session';
 
 interface AcademicYear {
   _id: string;
@@ -30,8 +32,8 @@ interface Exam {
 }
 
 const CalendarPage = () => {
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<AcademicYear | null>(null);
+  const [academicYears, setAcademicYears] = useState<ISession[]>([]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<ISession | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
   const [isAddExamModalOpen, setIsAddExamModalOpen] = useState(false);
@@ -86,15 +88,13 @@ const CalendarPage = () => {
         const data = await response.json();
         setAcademicYears(data);
 
-        // Find current academic year or default to the first one
-        const currentDate = new Date();
-        const currentYear = data.find((year: AcademicYear) => {
-          const startDate = new Date(year.startDate);
-          const endDate = new Date(year.endDate);
-          return currentDate >= startDate && currentDate <= endDate;
-        }) || (data.length > 0 ? data[0] : null);
-
-        setSelectedAcademicYear(currentYear);
+        if (data.length > 0) {
+            // Sort by startDate in descending order
+            const sortedYears = [...data].sort((a, b) =>
+                new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+            );
+            setSelectedAcademicYear(sortedYears[0]);
+        }
       } catch (error) {
         console.error('Error fetching academic years:', error);
         toast.error('Failed to load academic years');
@@ -315,7 +315,7 @@ const CalendarPage = () => {
   };
 
   // Format academic year label
-  const formatAcademicYearLabel = (year: AcademicYear) => {
+  const formatAcademicYearLabel = (year: ISession) => {
     const startDate = new Date(year.startDate);
     const endDate = new Date(year.endDate);
     return `${startDate.toLocaleString('default', { month: 'short' })} ${startDate.getFullYear()} - ${endDate.toLocaleString('default', { month: 'short' })} ${endDate.getFullYear()}`;
@@ -697,6 +697,11 @@ const CalendarPage = () => {
     }
   };
 
+  // Handle year change from dropdown
+  const handleYearChange = (yearId: ISession) => {
+    setSelectedAcademicYear(yearId);
+  };
+
   if (isLoadingAcademicYears || !selectedAcademicYear) {
     return (
       <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
@@ -717,36 +722,13 @@ const CalendarPage = () => {
           <div className="mb-6 flex justify-between items-center">
             <h2 className="card-title text-xl sm:text-2xl text-base-content">Academic Calendar</h2>
 
-            {/* Academic Year Dropdown */}
-            <div className="relative academic-year-dropdown">
-              <button
-                className="btn btn-sm btn-outline border-base-300 bg-base-100 text-base-content flex items-center gap-2"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                {formatAcademicYearLabel(selectedAcademicYear)}
-                <ChevronDown className="h-4 w-4" />
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-1 w-64 bg-base-100 shadow-lg rounded-md border border-base-300 z-10">
-                  <ul className="py-1">
-                    {academicYears.map(year => (
-                      <li key={year._id}>
-                        <button
-                          className={`w-full text-left px-4 py-2 hover:bg-base-200 ${selectedAcademicYear._id === year._id ? 'bg-base-200 text-primary' : 'text-base-content'}`}
-                          onClick={() => {
-                            setSelectedAcademicYear(year);
-                            setIsDropdownOpen(false);
-                          }}
-                        >
-                          {formatAcademicYearLabel(year)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            {/* Replace custom dropdown with our component */}
+            <AcademicYearDropdown
+              academicYears={academicYears}
+              selectedYearId={selectedAcademicYear}
+              onYearChange={handleYearChange}
+              isLoading={isLoadingAcademicYears}
+            />
           </div>
 
           <Tabs
@@ -941,8 +923,8 @@ const CalendarPage = () => {
                   name="examDate"
                   value={examFormData.examDate}
                   onChange={handleInputChange}
-                  min={selectedAcademicYear ? selectedAcademicYear.startDate.slice(0, 10) : ''}
-                  max={selectedAcademicYear ? selectedAcademicYear.endDate.slice(0, 10) : ''}
+                  min={selectedAcademicYear ? selectedAcademicYear.startDate.toISOString().slice(0, 10) : ''}
+                  max={selectedAcademicYear ? selectedAcademicYear.endDate.toISOString().slice(0, 10) : ''}
                 />
                 <label className="label">
                   <span className="label-text-alt text-info">

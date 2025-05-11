@@ -40,7 +40,7 @@ export default function ManageStudentPage() {
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
     const [academicYears, setAcademicYears] = useState<ISession[]>([]);
-    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | null>(null);
+    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<ISession | null>(null);
     const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
 
     useEffect(() => {
@@ -70,7 +70,7 @@ export default function ManageStudentPage() {
                         const sortedYears = [...data].sort((a, b) =>
                             new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
                         );
-                        setSelectedAcademicYearId(sortedYears[0]._id);
+                        setSelectedAcademicYearId(sortedYears[0]);
                     }
                 } catch (error) {
                     console.error('Error fetching academic years:', error);
@@ -88,7 +88,7 @@ export default function ManageStudentPage() {
             const fetchStudent = async () => {
                 setIsLoading(true);
                 try {
-                    const response = await fetch(`/api/manage-staff?role=${studentRole}&id=${userId}&academicYearId=${selectedAcademicYearId}`);
+                    const response = await fetch(`/api/manage-staff?role=${studentRole}&id=${userId}&academicYearId=${selectedAcademicYearId._id}`);
                     const studentClassData = await response.json();
                     setStudent(studentClassData);
                 } catch (error) {
@@ -129,7 +129,7 @@ export default function ManageStudentPage() {
     };
 
     // Handle year change
-    const handleYearChange = (yearId: string) => {
+    const handleYearChange = (yearId: ISession) => {
         setSelectedAcademicYearId(yearId);
     };
 

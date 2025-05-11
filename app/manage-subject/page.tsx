@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit, Trash2, Loader2, ChevronDown } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
 import { formatDate } from '@/utils/dateUtils';
 import ModalPopup from '../components/ui/modalPopup';
 import toast from 'react-hot-toast';
 import { UserRole } from '@/lib/role';
+import AcademicYearDropdown from '../components/ui/academicYearDropdown';
+import { ISession } from '../api/models/session';
 
 interface Subject {
     _id: string;
@@ -47,9 +48,9 @@ export default function ManageSubjectPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
-    const [academicYears, setAcademicYears] = useState<Subject['academicYearId'][]>([]);
-    const [selectedAcademicYear, setSelectedAcademicYear] = useState<Subject['academicYearId'] | null>(null);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [academicYears, setAcademicYears] = useState<ISession[]>([]);
+    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<ISession | null>(null);
+    const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -61,33 +62,46 @@ export default function ManageSubjectPage() {
             const userId = decodedPayload.id;
             setUserRole(userRole);
             setUserId(userId);
-        }
 
-        if (userId) {
-            const fetchData = async () => {
+            const fetchAcademicYears = async () => {
+                try {
+                    setIsLoadingAcademicYears(true);
+                    const response = await fetch('/api/session');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch academic years');
+                    }
+                    const data = await response.json();
+
+                    setAcademicYears(data);
+
+                    if (data.length > 0) {
+                        // Sort by startDate in descending order
+                        const sortedYears = [...data].sort((a, b) =>
+                            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+                        );
+                        setSelectedAcademicYearId(sortedYears[0]);
+                    }
+                } catch (error) {
+                    console.error('Error fetching academic years:', error);
+                    toast.error('Failed to load academic years');
+                } finally {
+                    setIsLoadingAcademicYears(false);
+                }
+            };
+            fetchAcademicYears();
+        }
+    }, []);
+
+    useEffect(() => {
+        if (userId && selectedAcademicYearId) {
+            const fetchSubjects = async () => {
                 try {
                     setIsLoading(true);
                     
-                    // Fetch academic years
-                    const academicYearsResponse = await fetch('/api/session');
-                    if (!academicYearsResponse.ok) throw new Error('Failed to fetch academic years');
-                    const academicYearsData = await academicYearsResponse.json();
-                    setAcademicYears(academicYearsData);
-
-                    // Find current academic year or default to the first one
-                    const currentDate = new Date();
-                    const currentYear = academicYearsData.find((year: any) => {
-                        const startDate = new Date(year.startDate);
-                        const endDate = new Date(year.endDate);
-                        return currentDate >= startDate && currentDate <= endDate;
-                    }) || (academicYearsData.length > 0 ? academicYearsData[0] : null);
-
-                    setSelectedAcademicYear(currentYear);
-                    
                     // Fetch subjects
                     const subjectsResponse = userRole === UserRole.STUDENT && userId 
-                        ? await fetch(`/api/manage-subject?studentId=${userId}&role=${userRole}&academicYearId=${currentYear._id}`) 
-                        : await fetch(`/api/manage-subject?academicYearId=${currentYear._id}`);
+                        ? await fetch(`/api/manage-subject?studentId=${userId}&role=${userRole}&academicYearId=${selectedAcademicYearId._id}`) 
+                        : await fetch(`/api/manage-subject?academicYearId=${selectedAcademicYearId._id}`);
 
                     if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
                     const subjectsData = await subjectsResponse.json();
@@ -100,54 +114,9 @@ export default function ManageSubjectPage() {
                 }
             };
 
-            fetchData();
+            fetchSubjects();
         }
-    }, [userRole, userId]);
-
-    // Effect to close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (!target.closest('.academic-year-dropdown')) {
-                setIsDropdownOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    // Format academic year label
-    const formatAcademicYearLabel = (year: Subject['academicYearId']) => {
-        const startDate = new Date(year.startDate);
-        const endDate = new Date(year.endDate);
-        return `${startDate.toLocaleString('default', { month: 'short' })} ${startDate.getFullYear()} - ${endDate.toLocaleString('default', { month: 'short' })} ${endDate.getFullYear()}`;
-    };
-
-    // Handle academic year change
-    const handleAcademicYearChange = async (year: Subject['academicYearId']) => {
-        setSelectedAcademicYear(year);
-        setIsDropdownOpen(false);
-        
-        try {
-            setIsLoading(true);
-            // Fetch subjects for the selected academic year
-            const subjectsResponse = userRole === UserRole.STUDENT && userId 
-                ? await fetch(`/api/manage-subject?studentId=${userId}&role=${userRole}&academicYearId=${year._id}`) 
-                : await fetch(`/api/manage-subject?academicYearId=${year._id}`);
-
-            if (!subjectsResponse.ok) throw new Error('Failed to fetch subjects');
-            const subjectsData = await subjectsResponse.json();
-            setSubjects(subjectsData);
-        } catch (error) {
-            console.error('Error fetching subjects:', error);
-            toast.error('Failed to fetch subjects');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    }, [userRole, userId, selectedAcademicYearId]);
 
     const filteredSubjects = subjects.filter(subject => {
         // Apply search filter
@@ -186,16 +155,10 @@ export default function ManageSubjectPage() {
         setSelectedSubjectId(null);
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-base-100">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
-                    <p className="mt-4 text-base-content">Loading subjects...</p>
-                </div>
-            </div>
-        );
-    }
+    // Handle year change
+    const handleYearChange = (yearId: ISession) => {
+        setSelectedAcademicYearId(yearId);
+    };
 
     return (
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
@@ -213,35 +176,14 @@ export default function ManageSubjectPage() {
                             />
                         </div>
                         <div className="flex items-center gap-2">
-                            {/* Academic Year Dropdown */}
-                            {selectedAcademicYear && (
-                                <div className="relative academic-year-dropdown">
-                                    <button
-                                        className="btn btn-sm btn-outline border-base-300 bg-base-100 text-base-content flex items-center gap-2"
-                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    >
-                                        {formatAcademicYearLabel(selectedAcademicYear)}
-                                        <ChevronDown className="h-4 w-4" />
-                                    </button>
-
-                                    {isDropdownOpen && (
-                                        <div className="absolute right-0 mt-1 w-64 bg-base-100 shadow-lg rounded-md border border-base-300 z-10">
-                                            <ul className="py-1">
-                                                {academicYears.map((year) => (
-                                                    <li key={year._id}>
-                                                        <button
-                                                            className={`w-full text-left px-4 py-2 hover:bg-base-200 ${selectedAcademicYear._id === year._id ? 'bg-base-200 text-primary' : 'text-base-content'}`}
-                                                            onClick={() => handleAcademicYearChange(year)}
-                                                        >
-                                                            {formatAcademicYearLabel(year)}
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            {/* Academic Year Dropdown Component */}
+                            <AcademicYearDropdown
+                                academicYears={academicYears}
+                                selectedYearId={selectedAcademicYearId}
+                                onYearChange={handleYearChange}
+                                isLoading={isLoadingAcademicYears}
+                            />
+                            
                             {userRole !== 'STUDENT' && (
                                 <Link href="/manage-subject/add">
                                     <Button variant="primary" type="submit" outline>
@@ -269,7 +211,16 @@ export default function ManageSubjectPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredSubjects.length > 0 ? (
+                                    {isLoading ? (
+                                        <tr>
+                                            <td colSpan={userRole !== 'STUDENT' ? 6 : 5} className="text-center py-8">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                                                    <p className="text-base-content">Loading subjects...</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : filteredSubjects.length > 0 ? (
                                         filteredSubjects.map((subject) => (
                                             <tr key={subject._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{subject.subject}</td>
@@ -294,10 +245,7 @@ export default function ManageSubjectPage() {
                                                                 </Button>
                                                             </Link>
                                                             <Button className="btn btn-ghost btn-sm"
-                                                                onClick={() => {
-                                                                    setSelectedSubjectId(subject._id);
-                                                                    setIsDeleteModalOpen(true)
-                                                                }}>
+                                                                onClick={() => handleDeleteClick(subject._id)}>
                                                                 <Trash2 className="w-4 h-4 text-error" />
                                                             </Button>
                                                         </div>
@@ -307,7 +255,7 @@ export default function ManageSubjectPage() {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={9} className="text-center py-8">
+                                            <td colSpan={userRole !== 'STUDENT' ? 6 : 5} className="text-center py-8">
                                                 <div className="flex flex-col items-center gap-2">
                                                     <p className="text-lg font-medium text-base-content">No subjects found</p>
                                                 </div>
@@ -326,6 +274,6 @@ export default function ManageSubjectPage() {
                 onConfirm={handleDeleteConfirm}
                 message="This will permanently delete this subject."
             />
-        </div >
+        </div>
     );
 }

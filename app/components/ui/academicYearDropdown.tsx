@@ -6,8 +6,8 @@ import { ISession } from '@/app/api/models/session';
 
 interface AcademicYearDropdownProps {
   academicYears: ISession[];
-  selectedYearId: string | null;
-  onYearChange: (yearId: string) => void;
+  selectedYearId: ISession | null;
+  onYearChange: (yearId: ISession) => void;
   isLoading?: boolean;
 }
 
@@ -57,7 +57,7 @@ export default function AcademicYearDropdown({
         ) : (
           <>
             {selectedYearId ? 
-              formatAcademicYearLabel(academicYears.find(year => year._id === selectedYearId)) : 
+              formatAcademicYearLabel(academicYears.find(year => year._id === selectedYearId._id)) : 
               "Select Academic Year"}
             <ChevronDown className="h-4 w-4" />
           </>
@@ -70,9 +70,9 @@ export default function AcademicYearDropdown({
             {academicYears.map(year => (
               <li key={year._id}>
                 <button
-                  className={`w-full text-left px-4 py-2 hover:bg-base-200 ${selectedYearId === year._id ? 'bg-base-200 text-primary' : 'text-base-content'}`}
+                  className={`w-full text-left px-4 py-2 hover:bg-base-200 ${selectedYearId?._id === year._id ? 'bg-base-200 text-primary' : 'text-base-content'}`}
                   onClick={() => {
-                    onYearChange(year._id);
+                    onYearChange(year);
                     setIsDropdownOpen(false);
                   }}
                 >
