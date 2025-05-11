@@ -45,7 +45,7 @@ export default function AcademicYearDropdown({
   return (
     <div className="relative academic-year-dropdown">
       <button
-        className="btn btn-sm btn-outline border-base-300 bg-base-100 text-base-content flex items-center gap-2"
+        className="btn h-12 px-6 btn-outline border-base-300 bg-base-100 text-base-content flex items-center gap-2"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         disabled={isLoading}
       >

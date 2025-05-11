@@ -15,20 +15,20 @@ interface AcademicYear {
 }
 
 interface Subject {
-    id: string;
-    class: string;
-    name: string;
-    date: string;
+  id: string;
+  class: string;
+  name: string;
+  date: string;
 }
 
 interface Exam {
-    id: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    description: string;
-    subjects?: Subject[];
-    class: string;
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  subjects?: Subject[];
+  class: string;
 }
 
 const CalendarPage = () => {
@@ -89,11 +89,11 @@ const CalendarPage = () => {
         setAcademicYears(data);
 
         if (data.length > 0) {
-            // Sort by startDate in descending order
-            const sortedYears = [...data].sort((a, b) =>
-                new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-            );
-            setSelectedAcademicYear(sortedYears[0]);
+          // Sort by startDate in descending order
+          const sortedYears = [...data].sort((a, b) =>
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          );
+          setSelectedAcademicYear(sortedYears[0]);
         }
       } catch (error) {
         console.error('Error fetching academic years:', error);
@@ -220,7 +220,7 @@ const CalendarPage = () => {
       // First pass: group all exams by their type ID
       data.forEach((exam: any) => {
         const typeId = exam.examType._id;
-        
+
         if (!examGroups[typeId]) {
           examGroups[typeId] = [];
         }
@@ -448,36 +448,36 @@ const CalendarPage = () => {
   };
 
   // Add ExamCard component right inside your calendar page file
-  const ExamCard = ({ 
-    exam, 
-    isExpanded, 
-    onToggle 
-  }: { 
-    exam: Exam; 
-    isExpanded: boolean; 
-    onToggle: () => void; 
+  const ExamCard = ({
+    exam,
+    isExpanded,
+    onToggle
+  }: {
+    exam: Exam;
+    isExpanded: boolean;
+    onToggle: () => void;
   }) => {
-    
+
     // Group subjects by class
     const getSubjectsByClass = (subjects: Subject[]) => {
       const groupedSubjects: { [key: string]: Subject[] } = {};
-      
+
       subjects.forEach(subject => {
         if (!groupedSubjects[subject.class]) {
           groupedSubjects[subject.class] = [];
         }
         groupedSubjects[subject.class].push(subject);
       });
-      
-      const sortedClasses = Object.keys(groupedSubjects).sort((a, b) => 
+
+      const sortedClasses = Object.keys(groupedSubjects).sort((a, b) =>
         parseInt(a) - parseInt(b)
       );
-      
+
       return { groupedSubjects, sortedClasses };
     };
 
     return (
-      <div 
+      <div
         className={`
           border border-base-300 rounded-lg p-3 sm:p-4 
           hover:bg-base-300/40 hover:shadow-md transition-all duration-200 
@@ -515,14 +515,14 @@ const CalendarPage = () => {
             }
           </div>
         </div>
-        
+
         {/* Expandable indicator at the bottom edge */}
         {exam.subjects && exam.subjects.length > 0 && !isExpanded && (
           <div className="absolute bottom-0 left-0 w-full flex justify-center">
             <div className="h-1 w-8 bg-primary/30 rounded-t-full"></div>
           </div>
         )}
-        
+
         {/* Expandable section for subjects */}
         {isExpanded && exam.subjects && exam.subjects.length > 0 && (
           <div className="mt-3 pt-3 border-t border-base-300" onClick={(e) => e.stopPropagation()}>
@@ -532,7 +532,7 @@ const CalendarPage = () => {
             <div className="space-y-2">
               {(() => {
                 const { groupedSubjects, sortedClasses } = getSubjectsByClass(exam.subjects);
-                
+
                 return sortedClasses.map((classNumber, classIndex) => (
                   <div key={classNumber}>
                     {/* Class header with 50% line prefix and timetable icon */}
@@ -542,27 +542,27 @@ const CalendarPage = () => {
                         <div className="text-xs font-bold text-primary/80 ml-2 bg-primary/10 px-3 py-1 rounded-full">
                           Class {classNumber}
                         </div>
-                        
+
                         {/* Add seating arrangement button (only for staff) */}
                         {userRole !== 'STUDENT' && (
-                          <button 
+                          <button
                             className="btn btn-xs btn-outline border-primary/30 text-primary/80 ml-2"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleAddSeatingArrangement(exam.id, classNumber);
                             }}
                           >
-                            <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M12 3v18"/></svg>
+                            <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M12 3v18" /></svg>
                             <span className="text-xs opacity-80">Add Seating</span>
                           </button>
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Subjects for this class */}
                     {groupedSubjects[classNumber].map((subject, subjectIndex) => (
-                      <div 
-                        key={subject.id} 
+                      <div
+                        key={subject.id}
                         className={`
                           flex justify-between text-sm sm:text-base pl-2
                           ${subjectIndex < groupedSubjects[classNumber].length - 1 ? 'mb-2 pb-2 border-b border-gray-300 dark:border-gray-700' : ''}
@@ -577,7 +577,7 @@ const CalendarPage = () => {
                         </div>
                       </div>
                     ))}
-                    
+
                     {/* Border after each class group (except the last one) */}
                     {classIndex < sortedClasses.length - 1 && (
                       <div className="border-b border-base-200 mt-2"></div>
@@ -608,11 +608,11 @@ const CalendarPage = () => {
         {exams.map((exam, index) => {
           // Create a unique ID for each card
           const cardId = `${exam.id}-${index}`;
-          
+
           return (
             <div key={cardId} className="w-full md:w-[calc(50%-0.5rem)]">
-              <ExamCard 
-                exam={exam} 
+              <ExamCard
+                exam={exam}
                 isExpanded={expandedCardId === cardId}
                 onToggle={() => toggleCard(cardId)}
               />
@@ -632,10 +632,10 @@ const CalendarPage = () => {
       sectionId: '',
       venue: ''
     });
-    
+
     // Fetch sections for this class
     fetchSections(classNumber);
-    
+
     // Open the modal
     setIsSeatingModalOpen(true);
   };
@@ -646,7 +646,7 @@ const CalendarPage = () => {
       setIsLoadingSections(true);
       const response = await fetch(`/api/sections?classNumber=${classNumber}`);
       if (!response.ok) throw new Error('Failed to fetch sections');
-      
+
       const data = await response.json();
       setSections(data);
     } catch (error) {
@@ -669,7 +669,7 @@ const CalendarPage = () => {
   // Handle seating arrangement form submission
   const handleSubmitSeatingArrangement = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const response = await fetch('/api/seating-arrangement', {
         method: 'POST',
@@ -688,7 +688,7 @@ const CalendarPage = () => {
         toast.error(errorData.error || 'Failed to add seating arrangement');
         return;
       }
-      
+
       toast.success('Seating arrangement added successfully');
       setIsSeatingModalOpen(false);
     } catch (error) {
@@ -781,13 +781,15 @@ const CalendarPage = () => {
 
                     {/* Only show Add Exam button for non-student users */}
                     {userRole !== 'STUDENT' && (
-                      <button
-                        className="btn btn-sm btn-primary"
+                      <Button
+                        variant='primary'
+                        outline
+                        // className="btn btn-sm btn-primary"
                         onClick={handleAddExamClick}
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Exam
-                      </button>
+                      </Button>
                     )}
                   </div>
 

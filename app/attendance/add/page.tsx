@@ -430,8 +430,8 @@ export default function AttendanceAddPage() {
                                     setDateFieldTouched(true);
                                 }}
                                 onFocus={() => setDateFieldTouched(true)}
-                                min={academicYears.find(year => year._id === selectedYear?._id)?.startDate.split('T')[0] || ''}
-                                max={academicYears.find(year => year._id === selectedYear?._id)?.endDate.split('T')[0] || ''}
+                                min={selectedYear?.startDate ? new Date(selectedYear.startDate).toISOString().split('T')[0] : ''}
+                                max={selectedYear?.endDate ? new Date(selectedYear.endDate).toISOString().split('T')[0] : ''}
                                 disabled={!selectedYear || !selectedStaff}
                             />
                             {!attendanceDate && dateFieldTouched && (
