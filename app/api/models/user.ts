@@ -7,7 +7,7 @@ export interface IUser extends Document {
   lastName: string;
   address: string;
   role: string;
-  academicYearId: string[];
+  // academicYearId: string[];
   dateJoined: Date;
   isClassTeacher: boolean;
   classId: string;
@@ -29,13 +29,13 @@ const userSchema = new mongoose.Schema(
     lastName: { type: String, required: true },
     address: { type: String, required: true },
     role: { type: String, required: true },
-    academicYearId: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "sessions",
-        required: false,
-      },
-    ],
+    // academicYearId: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "sessions",
+    //     required: false,
+    //   },
+    // ],
     dateJoined: { type: Date, required: true },
     isClassTeacher: { type: Boolean, default: false },
     classId: {

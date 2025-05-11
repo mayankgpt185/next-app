@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { formatDate } from '@/utils/dateUtils';
 import ModalPopup from '../components/ui/modalPopup';
 import toast from 'react-hot-toast';
+import { ISession } from '../api/models/session';
+import AcademicYearDropdown from '../components/ui/academicYearDropdown';
 
 interface StudentMember {
     _id: number;
+    rollNumber: number;
     studentId: {
         firstName: string;
         lastName: string;
@@ -36,6 +39,9 @@ export default function ManageStudentPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
+    const [academicYears, setAcademicYears] = useState<ISession[]>([]);
+    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | null>(null);
+    const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -48,23 +54,52 @@ export default function ManageStudentPage() {
             setUserRole(userRole);
             setUserId(userId);
 
-            // Only fetch student data after userId is set
-            if (userId) {
-                const fetchStudent = async () => {
-                    try {
-                        const response = await fetch(`/api/manage-staff?role=${studentRole}&id=${userId}`);
-                        const studentClassData = await response.json();
-                        setStudent(studentClassData);
-                    } catch (error) {
-                        console.error('Error fetching student:', error);
-                    } finally {
-                        setIsLoading(false);
+            const fetchAcademicYears = async () => {
+                try {
+                    setIsLoadingAcademicYears(true);
+                    const response = await fetch('/api/session');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch academic years');
                     }
-                };
-                fetchStudent();
-            }
+                    const data = await response.json();
+
+                    setAcademicYears(data);
+
+                    if (data.length > 0) {
+                        // Sort by startDate in descending order
+                        const sortedYears = [...data].sort((a, b) =>
+                            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+                        );
+                        setSelectedAcademicYearId(sortedYears[0]._id);
+                    }
+                } catch (error) {
+                    console.error('Error fetching academic years:', error);
+                    toast.error('Failed to load academic years');
+                } finally {
+                    setIsLoadingAcademicYears(false);
+                }
+            };
+            fetchAcademicYears();
         }
-    }, [userRole, userId]);
+    }, []);
+
+    useEffect(() => {
+        if (userId && selectedAcademicYearId) {
+            const fetchStudent = async () => {
+                setIsLoading(true);
+                try {
+                    const response = await fetch(`/api/manage-staff?role=${studentRole}&id=${userId}&academicYearId=${selectedAcademicYearId}`);
+                    const studentClassData = await response.json();
+                    setStudent(studentClassData);
+                } catch (error) {
+                    console.error('Error fetching student:', error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchStudent();
+        }
+    }, [userId, selectedAcademicYearId, studentRole]);
 
     const handleDeleteClick = (studentId: number) => {
         setSelectedStudentId(studentId);
@@ -93,16 +128,10 @@ export default function ManageStudentPage() {
         setSelectedStudentId(null);
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-base-100">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
-                    <p className="mt-4 text-base-content">Loading student...</p>
-                </div>
-            </div>
-        );
-    }
+    // Handle year change
+    const handleYearChange = (yearId: string) => {
+        setSelectedAcademicYearId(yearId);
+    };
 
     return (
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
@@ -119,14 +148,24 @@ export default function ManageStudentPage() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        {userRole !== 'STUDENT' && (
-                            <Link href="/manage-student/add">
-                                <Button variant="primary" type="submit" outline>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add Student
-                                </Button>
-                            </Link>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {/* Academic Year Dropdown Component */}
+                            <AcademicYearDropdown
+                                academicYears={academicYears}
+                                selectedYearId={selectedAcademicYearId}
+                                onYearChange={handleYearChange}
+                                isLoading={isLoadingAcademicYears}
+                            />
+                            
+                            {userRole !== 'STUDENT' && (
+                                <Link href="/manage-student/add">
+                                    <Button variant="primary" type="submit" outline>
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add Student
+                                    </Button>
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto flex-1">
@@ -134,6 +173,7 @@ export default function ManageStudentPage() {
                             <table className="table table-pin-rows">
                                 <thead className="sticky top-0 bg-base-300">
                                     <tr>
+                                        <th className="text-base-content">Roll Number</th>
                                         <th className="text-base-content">First Name</th>
                                         <th className="text-base-content">Last Name</th>
                                         <th className="text-base-content">Class</th>
@@ -147,9 +187,19 @@ export default function ManageStudentPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {studentMembers.length > 0 ? (
+                                    {isLoading ? (
+                                        <tr>
+                                            <td colSpan={userRole !== 'STUDENT' ? 9 : 8} className="text-center py-8">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                                                    <p className="text-base-content">Loading students...</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : studentMembers.length > 0 ? (
                                         studentMembers.map((student) => (
                                             <tr key={student._id} className="hover:bg-base-200">
+                                                <td className="text-base-content">{student.rollNumber}</td>
                                                 <td className="text-base-content">{student.studentId.firstName}</td>
                                                 <td className="text-base-content">{student.studentId.lastName}</td>
                                                 <td className="text-base-content">{student.class.classNumber} {student.section.section}</td>
@@ -175,12 +225,11 @@ export default function ManageStudentPage() {
                                                         </div>
                                                     </td>
                                                 )}
-
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={9} className="text-center py-8">
+                                            <td colSpan={userRole !== 'STUDENT' ? 9 : 8} className="text-center py-8">
                                                 <div className="flex flex-col items-center gap-2">
                                                     <p className="text-lg font-medium text-base-content">No student members found</p>
                                                 </div>
@@ -199,6 +248,6 @@ export default function ManageStudentPage() {
                 onConfirm={handleDeleteConfirm}
                 message="This will permanently delete this student."
             />
-        </div >
+        </div>
     );
 }

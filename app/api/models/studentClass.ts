@@ -17,6 +17,15 @@ const StudentClassSchema = new mongoose.Schema(
       ref: "sections", // Match the model name used in Section model
       required: true,
     },
+    academicYear: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "sessions", // Match the model name used in AcademicYear model
+      required: true,
+    },
+    rollNumber: {
+      type: Number,
+      required: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -55,6 +55,15 @@ const CalendarPage = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [studentClassId, setStudentClassId] = useState<string | null>(null);
+  const [isSeatingModalOpen, setIsSeatingModalOpen] = useState(false);
+  const [seatingFormData, setSeatingFormData] = useState({
+    examId: '',
+    classNumber: '',
+    sectionId: '',
+    venue: ''
+  });
+  const [sections, setSections] = useState([]);
+  const [isLoadingSections, setIsLoadingSections] = useState(false);
 
   // Sample data
   const holidays = [
@@ -529,10 +538,24 @@ const CalendarPage = () => {
                     {/* Class header with 50% line prefix and timetable icon */}
                     <div className="flex items-center mt-2 mb-1">
                       <div className="w-1/6 border-t-2 border-primary/30"></div>
-                      <div className="flex items-center">
+                      <div className="flex items-center justify-between w-5/6">
                         <div className="text-xs font-bold text-primary/80 ml-2 bg-primary/10 px-3 py-1 rounded-full">
                           Class {classNumber}
                         </div>
+                        
+                        {/* Add seating arrangement button (only for staff) */}
+                        {userRole !== 'STUDENT' && (
+                          <button 
+                            className="btn btn-xs btn-outline border-primary/30 text-primary/80 ml-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddSeatingArrangement(exam.id, classNumber);
+                            }}
+                          >
+                            <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M12 3v18"/></svg>
+                            <span className="text-xs opacity-80">Add Seating</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                     
@@ -598,6 +621,80 @@ const CalendarPage = () => {
         })}
       </div>
     );
+  };
+
+  // Handle opening the seating arrangement modal
+  const handleAddSeatingArrangement = (examId: string, classNumber: string) => {
+    // Reset form data
+    setSeatingFormData({
+      examId,
+      classNumber,
+      sectionId: '',
+      venue: ''
+    });
+    
+    // Fetch sections for this class
+    fetchSections(classNumber);
+    
+    // Open the modal
+    setIsSeatingModalOpen(true);
+  };
+
+  // Fetch sections for a class
+  const fetchSections = async (classNumber: string) => {
+    try {
+      setIsLoadingSections(true);
+      const response = await fetch(`/api/sections?classNumber=${classNumber}`);
+      if (!response.ok) throw new Error('Failed to fetch sections');
+      
+      const data = await response.json();
+      setSections(data);
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+      toast.error('Failed to load sections');
+    } finally {
+      setIsLoadingSections(false);
+    }
+  };
+
+  // Handle form input changes for seating arrangement
+  const handleSeatingInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setSeatingFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle seating arrangement form submission
+  const handleSubmitSeatingArrangement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/seating-arrangement', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          examId: seatingFormData.examId,
+          sectionId: seatingFormData.sectionId,
+          venue: seatingFormData.venue,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to add seating arrangement');
+        return;
+      }
+      
+      toast.success('Seating arrangement added successfully');
+      setIsSeatingModalOpen(false);
+    } catch (error) {
+      console.error('Error creating seating arrangement:', error);
+      toast.error('An error occurred while saving the seating arrangement');
+    }
   };
 
   if (isLoadingAcademicYears || !selectedAcademicYear) {
@@ -713,9 +810,9 @@ const CalendarPage = () => {
                   </div>
 
                   {isLoadingExams ? (
-                    <div className="flex justify-center items-center p-8">
+                    <div className="flex flex-col justify-center items-center p-8">
                       <span className="loading loading-spinner loading-md text-primary"></span>
-                      <p className="ml-2 text-base-content">Loading exams...</p>
+                      <p className="mt-2 text-base-content">Loading exams...</p>
                     </div>
                   ) : exams.length > 0 ? (
                     <ManageExam exams={exams} />
@@ -877,6 +974,96 @@ const CalendarPage = () => {
                   ) : (
                     'Add Exam'
                   )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Seating Arrangement Modal */}
+      {isSeatingModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-base-content">
+                Add Seating Arrangement
+              </h3>
+              <button
+                className="btn btn-sm btn-ghost text-base-content"
+                onClick={() => setIsSeatingModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className="space-y-4" onSubmit={handleSubmitSeatingArrangement}>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text text-base-content">Class</span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered text-base-content"
+                  value={`Class ${seatingFormData.classNumber}`}
+                  disabled
+                />
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text text-base-content">Section</span>
+                </label>
+                <select
+                  className="select select-bordered w-full text-base-content"
+                  required
+                  name="sectionId"
+                  value={seatingFormData.sectionId}
+                  onChange={handleSeatingInputChange}
+                >
+                  <option value="" disabled className="text-base-content">Select section</option>
+                  {isLoadingSections ? (
+                    <option disabled className="text-base-content">Loading sections...</option>
+                  ) : (
+                    sections.map((section: any) => (
+                      <option key={section._id} value={section._id} className="text-base-content">
+                        {section.section}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text text-base-content">Venue</span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered text-base-content"
+                  required
+                  name="venue"
+                  value={seatingFormData.venue}
+                  onChange={handleSeatingInputChange}
+                  placeholder="Enter venue (e.g., Room 101)"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  outline
+                  onClick={() => setIsSeatingModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  outline
+                >
+                  Save Arrangement
                 </Button>
               </div>
             </form>

@@ -156,7 +156,7 @@ export default function AddStudentPage() {
     const userData = id ? { ...data, id } : {
       ...data,
       role: studentRole,
-      academicYearId: [selectedAcademicYearId]
+      // academicYearId: [selectedAcademicYearId]
     };
     const response = await fetch(`/api/manage-staff${id ? `?id=${id}` : ''}`, {
 
@@ -176,6 +176,7 @@ export default function AddStudentPage() {
         studentId: responseData._id,
         classId: data.classId,
         sectionId: data.sectionId,
+        academicYearId: selectedAcademicYearId
       }
       const studentClassResponse = await fetch(`/api/student-class${responseData._id ? `?studentId=${responseData._id}` : ''}`, {
         method: method,

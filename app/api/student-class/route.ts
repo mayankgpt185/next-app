@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Class } from "../models/class";
 import Section from "../models/section";
+import Session from "../models/session";
 
 export async function POST(request: Request) {
   try {
@@ -13,18 +14,33 @@ export async function POST(request: Request) {
     // Verify that class and section exist
     const classExists = await Class.findById(data.classId);
     const sectionExists = await Section.findById(data.sectionId);
+    const academicYearExists = await Session.findById(data.academicYearId);
 
-    if (!classExists || !sectionExists) {
+    if (!classExists || !sectionExists || !academicYearExists) {
       return NextResponse.json(
-        { error: "Invalid class or section" },
+        { error: "Invalid class, section or academic year" },
         { status: 400 }
       );
     }
+
+    // Get the highest roll number in this class and section
+    const existingStudents = await StudentClass.find({
+      class: data.classId,
+      section: data.sectionId,
+      academicYear: data.academicYearId,
+      isActive: true
+    }).sort({ rollNumber: -1 }).limit(1);
+    
+    // Calculate new roll number
+    const rollNumber = existingStudents.length > 0 ? existingStudents[0].rollNumber + 1 : 1;
 
     const studentClass = await StudentClass.create({
       studentId: data.studentId,
       class: data.classId,
       section: data.sectionId,
+      academicYear: data.academicYearId,
+      rollNumber: rollNumber,
+      isActive: true,
     });
 
     return NextResponse.json(studentClass);

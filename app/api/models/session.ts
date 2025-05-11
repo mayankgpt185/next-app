@@ -1,5 +1,16 @@
 import mongoose from "mongoose";
 
+
+export interface ISession extends Document {
+  _id: string;
+  startDate: Date;
+  endDate: Date;
+  clientOrganizationId: string;
+  isActive: boolean;
+  addedDate: Date;
+  modifiedDate: Date;
+}
+
 const SessionSchema = new mongoose.Schema(
   {
     startDate: {

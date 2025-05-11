@@ -87,17 +87,6 @@ export default function ManageStaffPage() {
         setSelectedStaffId(null);
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-base-100">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
-                    <p className="mt-4 text-base-content">Loading staff...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="flex flex-col w-full min-h-screen p-6 bg-base-100">
             <div className="card bg-base-200 shadow-xl flex-1">
@@ -138,7 +127,16 @@ export default function ManageStaffPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredStaff.length > 0 ? (
+                                    {isLoading ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-8">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                                                    <p className="text-base-content">Loading staff...</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : filteredStaff.length > 0 ? (
                                         filteredStaff.map((staff) => (
                                             <tr key={staff._id} className="hover:bg-base-200">
                                                 <td className="text-base-content">{staff.firstName}</td>
@@ -167,7 +165,7 @@ export default function ManageStaffPage() {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={9} className="text-center py-8">
+                                            <td colSpan={7} className="text-center py-8">
                                                 <div className="flex flex-col items-center gap-2">
                                                     <p className="text-lg font-medium text-base-content">No staff members found</p>
                                                 </div>
@@ -186,6 +184,6 @@ export default function ManageStaffPage() {
                 onConfirm={handleDeleteConfirm}
                 message="This will permanently delete this staff member."
             />
-        </div >
+        </div>
     );
 }

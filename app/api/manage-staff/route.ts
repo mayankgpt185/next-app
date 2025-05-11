@@ -64,11 +64,6 @@ export async function POST(request: NextRequest) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
-    let academicYearId = null;
-    if (body.academicYearId) {
-      academicYearId = body.academicYearId;
-    }
-
     // Create new user with hashed password
     const userData = {
       firstName: body.firstName,
@@ -78,7 +73,6 @@ export async function POST(request: NextRequest) {
       address: body.address,
       role: body.role,
       dateJoined: body.dateJoined,
-      academicYearId: academicYearId,
       clientOrganizationId: clientOrganizationId,
     };
 
@@ -105,6 +99,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const role = searchParams.get("role");
+    const academicYearId = searchParams.get("academicYearId");
+
     const token = await getTokenFromRequest(request);
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -112,7 +108,7 @@ export async function GET(request: NextRequest) {
     const clientOrganizationId = token.clientOrganizationId;
     const userRole = token.role;
 
-    if (role === UserRole.STUDENT && id) {
+    if (role === UserRole.STUDENT && id && academicYearId) {
       if (userRole === UserRole.STUDENT) {
         const userData = await User.findOne({
           role: role,
@@ -124,18 +120,24 @@ export async function GET(request: NextRequest) {
         if (userData) {
           const studentClassSection = await StudentClass.findOne({
             studentId: userData._id,
+            academicYear: academicYearId
           });
+          if (!studentClassSection) {
+            return NextResponse.json({ error: "Student not found" }, { status: 404 });
+          }
           const userList = await User.find({
             role: role,
             isActive: true,
-            clientOrganizationId,
+            clientOrganizationId
           });
+
 
           const studentClass = await StudentClass.find()
             .where("studentId")
             .in(userList.map((user) => user._id))
             .where({ class: studentClassSection.class })
             .where({ section: studentClassSection.section })
+            .where({ academicYear: academicYearId })
             .populate("studentId")
             .populate("class", "_id classNumber")
             .populate("section", "_id section")
@@ -145,6 +147,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         const studentClass = await StudentClass.find()
+          .where({ academicYear: academicYearId })
           .populate("studentId")
           .populate("class", "_id classNumber")
           .populate("section", "_id section")
